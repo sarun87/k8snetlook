@@ -4,14 +4,11 @@ import (
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/sarun87/k8snetlook/k8snetlook"
 )
 
 var (
-	srcPodName   string        // Variable to store name of source pod
-	dstPodName   string        // Variable to store name of destination pod
-	dstSvcName   string        // Variable to store name of destination service
-	kubeconfig   string        // Variable to store path to kubeconfig
-	externalIP   string        // Variable to store external IP destination
 	podCmd       *flag.FlagSet // Sub-command for pod debugging
 	hostCmd      *flag.FlagSet // Sub-command for host debugging
 	podDebugging bool          // Variable to hold debug mode
@@ -20,16 +17,19 @@ var (
 func init() {
 	// Pod debugging flags
 	podCmd = flag.NewFlagSet("pod", flag.ExitOnError)
-	podCmd.StringVar(&srcPodName, "srcpod", "", "Name of source Pod to debug")
-	podCmd.StringVar(&dstPodName, "dstpod", "", "Name of destination Pod to connect")
-	podCmd.StringVar(&dstSvcName, "dstsvc", "kubernetes", "Name of detination Service to debug")
-	podCmd.StringVar(&externalIP, "externalip", "8.8.8.8", "External IP to test egress traffic flow")
-	podCmd.StringVar(&kubeconfig, "config", os.Getenv("KUBECONFIG"), "Path to Kubeconfig")
+	podCmd.StringVar(&k8snetlook.Cfg.SrcPod.Name, "srcpodname", "", "Name of source Pod to debug")
+	podCmd.StringVar(&k8snetlook.Cfg.SrcPod.Namespace, "srcpodns", "", "Namespace to which the Pod belongs")
+	podCmd.StringVar(&k8snetlook.Cfg.DstPod.Name, "dstpodname", "", "Name of destination Pod to connect")
+	podCmd.StringVar(&k8snetlook.Cfg.DstPod.Namespace, "dstpodns", "", "Namespace to which the Pod belongs")
+	podCmd.StringVar(&k8snetlook.Cfg.DstSvc.Name, "dstsvcname", "", "Name of detination Service to debug")
+	podCmd.StringVar(&k8snetlook.Cfg.DstSvc.Namespace, "dstsvcns", "", "Namespace to which the Pod belongs")
+	podCmd.StringVar(&k8snetlook.Cfg.ExternalIP, "externalip", "", "External IP to test egress traffic flow")
+	podCmd.StringVar(&k8snetlook.Cfg.KubeconfigPath, "config", os.Getenv("KUBECONFIG"), "Path to Kubeconfig")
 
 	// Host debugging flags
 	hostCmd = flag.NewFlagSet("host", flag.ExitOnError)
-	hostCmd.StringVar(&externalIP, "externalip", "8.8.8.8", "External IP to test egress traffic flow")
-	hostCmd.StringVar(&kubeconfig, "config", os.Getenv("KUBECONFIG"), "Path to Kubeconfig")
+	hostCmd.StringVar(&k8snetlook.Cfg.ExternalIP, "externalip", "", "External IP to test egress traffic flow")
+	hostCmd.StringVar(&k8snetlook.Cfg.KubeconfigPath, "config", os.Getenv("KUBECONFIG"), "Path to Kubeconfig")
 }
 
 func printUsage() {
@@ -62,19 +62,28 @@ func main() {
 
 	validateArgs()
 
-	// Start debugging process
+	k8snetlook.InitKubeClient(k8snetlook.Cfg.KubeconfigPath)
+	k8snetlook.InitK8sInfo()
+
+	defer k8snetlook.Cleanup()
+
+	if podDebugging == true {
+		k8snetlook.RunPodDebug()
+	} else {
+		k8snetlook.RunHostDebug()
+	}
 
 }
 
 func validateArgs() {
 	exitProgram := false
 	fmt.Println("")
-	if kubeconfig == "" {
+	if k8snetlook.Cfg.KubeconfigPath == "" {
 		fmt.Println("error: KUBECONFIG env variable not set. Please pass kubeconfig using -config")
 		exitProgram = true
 	}
-	if podDebugging && srcPodName == "" {
-		fmt.Printf("error: srcpod flag required for pod debugging\n\n")
+	if podDebugging && k8snetlook.Cfg.SrcPod.Name == "" {
+		fmt.Printf("error: srcpodname flag required for pod debugging\n\n")
 		podCmd.Usage()
 		exitProgram = true
 	}
