@@ -13,7 +13,7 @@ var (
 	passingHostChecks int
 )
 
-func RunHostDebug() {
+func RunHostChecks() {
 	RunGatewayConnectivityCheck()
 	RunKubeAPIServiceIPConnectivityCheck()
 	RunKubeAPIEndpointIPConnectivityCheck()
@@ -42,7 +42,7 @@ func RunKubeAPIServiceIPConnectivityCheck() {
 	// TODO: Handle secure/non-secure api-servers
 
 	// HTTP 401 return code is a successful check
-	url := fmt.Sprintf("https://%s", Cfg.KubeAPIServiceIP)
+	url := fmt.Sprintf("https://%s:%d", Cfg.KubeAPIService.IP, Cfg.KubeAPIService.Port)
 	fmt.Println("----> Running Kube Service IP connectivity check..")
 	var body []byte
 	responseCode, err := sendRecvHTTPMessage(url, "", &body)
@@ -91,7 +91,7 @@ func RunKubeAPIEndpointIPConnectivityCheck(){
 }
 
 func RunAPIServerHealthCheck() {
-	url := fmt.Sprintf("https://%s:443/livez?verbose", Cfg.KubeAPIServiceIP)
+	url := fmt.Sprintf("https://%s:%d/livez?verbose", Cfg.KubeAPIService.IP, Cfg.KubeAPIService.Port)
 	fmt.Println("----> Running Kube API Server health check..")
 	svcAccountToken, err := getSvcAccountToken()
 	if err != nil {
