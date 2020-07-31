@@ -10,7 +10,7 @@ import (
 
 var (
 	podCmd       *flag.FlagSet // Sub-command for pod debugging
-	hostCmd      *flag.FlagSet // Sub-command for host debugging
+	hostOnlyCmd  *flag.FlagSet // Sub-command for host debugging
 	podDebugging bool          // Variable to hold debug mode
 )
 
@@ -26,24 +26,24 @@ func init() {
 	podCmd.StringVar(&k8snetlook.Cfg.ExternalIP, "externalip", "", "External IP to test egress traffic flow")
 	podCmd.StringVar(&k8snetlook.Cfg.KubeconfigPath, "config", os.Getenv("KUBECONFIG"), "Path to Kubeconfig")
 
-	// Host debugging flags
-	hostCmd = flag.NewFlagSet("host", flag.ExitOnError)
-	hostCmd.StringVar(&k8snetlook.Cfg.ExternalIP, "externalip", "", "External IP to test egress traffic flow")
-	hostCmd.StringVar(&k8snetlook.Cfg.KubeconfigPath, "config", os.Getenv("KUBECONFIG"), "Path to Kubeconfig")
+	hostOnlyCmd = flag.NewFlagSet("host", flag.ExitOnError)
+	hostOnlyCmd.StringVar(&k8snetlook.Cfg.KubeconfigPath, "config", os.Getenv("KUBECONFIG"), "Path to Kubeconfig")
+
 }
 
 func printUsage() {
 	fmt.Println("")
-	fmt.Println("usage: k8snetlook subcommand [sub-command-options]")
+	fmt.Println("usage: k8snetlook subcommand [sub-command-options] [-config path-to-kube-config] ")
 	fmt.Println("")
 	fmt.Println("valid subcommands")
-	fmt.Println("  pod    Debug Pod networking")
-	fmt.Println("  host   Debug generic networking from the host")
+	fmt.Println("  pod       Debug Pod & host networking")
+	fmt.Println("  host      Debug host networking only")
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("error: expected 'pod' or 'host' subcommand")
+
+	if len(os.Args) < 1 {
+		fmt.Println("'host' or 'pod' subcommand expected")
 		printUsage()
 		os.Exit(1)
 	}
@@ -53,9 +53,9 @@ func main() {
 		podDebugging = true
 		podCmd.Parse(os.Args[2:])
 	case "host":
-		hostCmd.Parse(os.Args[2:])
+		hostOnlyCmd.Parse(os.Args[2:])
 	default:
-		fmt.Println("error: expected 'pod' or 'host' subcommand")
+		fmt.Println("'host' or 'pod' subcommand expected")
 		printUsage()
 		os.Exit(1)
 	}
@@ -64,30 +64,24 @@ func main() {
 
 	k8snetlook.InitKubeClient(k8snetlook.Cfg.KubeconfigPath)
 	k8snetlook.InitK8sInfo()
-
 	defer k8snetlook.Cleanup()
 
+	k8snetlook.RunHostChecks()
 	if podDebugging == true {
-		k8snetlook.RunPodDebug()
-	} else {
-		k8snetlook.RunHostDebug()
+		k8snetlook.RunPodChecks()
 	}
-
 }
 
 func validateArgs() {
-	exitProgram := false
 	fmt.Println("")
 	if k8snetlook.Cfg.KubeconfigPath == "" {
 		fmt.Println("error: KUBECONFIG env variable not set. Please pass kubeconfig using -config")
-		exitProgram = true
+		printUsage()
+		os.Exit(1)
 	}
 	if podDebugging && k8snetlook.Cfg.SrcPod.Name == "" {
 		fmt.Printf("error: srcpodname flag required for pod debugging\n\n")
 		podCmd.Usage()
-		exitProgram = true
-	}
-	if exitProgram {
 		os.Exit(1)
 	}
 }

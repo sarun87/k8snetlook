@@ -19,9 +19,9 @@ type Pod struct {
 }
 
 type Service struct {
-	Name      string
-	Namespace string
-	IP        string
+	Name        string
+	Namespace   string
+	SvcEndpoint Endpoint
 }
 
 type Endpoint struct {
@@ -36,9 +36,9 @@ type Config struct {
 	ExternalIP     string
 	KubeconfigPath string
 
-	KubeAPIServiceIP string
-	HostGatewayIP    string
-	KubeDNSServiceIP string
+	KubeAPIService Endpoint
+	KubeDNSService Endpoint
+	HostGatewayIP  string
 }
 
 var Cfg Config
@@ -53,8 +53,8 @@ func InitKubeClient(kubeconfigPath string) {
 }
 
 func InitK8sInfo() {
-	Cfg.KubeAPIServiceIP = getServiceClusterIP("default", "kubernetes")
-	Cfg.KubeDNSServiceIP = getServiceClusterIP("kube-system", "kube-dns")
+	Cfg.KubeAPIService = getServiceClusterIP("default", "kubernetes")
+	Cfg.KubeDNSService = getServiceClusterIP("kube-system", "kube-dns")
 	Cfg.HostGatewayIP = getHostGatewayIP()
 	Cfg.SrcPod.NsHandle = netns.NsHandle(-1)
 	if Cfg.SrcPod.Name != "" {
@@ -64,10 +64,9 @@ func InitK8sInfo() {
 	Cfg.DstPod.NsHandle = netns.NsHandle(-1)
 	if Cfg.DstPod.Name != "" {
 		Cfg.DstPod.IP = getPodIPFromName(Cfg.DstPod.Namespace, Cfg.DstPod.Name)
-		Cfg.DstPod.NsHandle = getPodNetnsHandle(Cfg.DstPod.Namespace, Cfg.DstPod.Name)
 	}
 	if Cfg.DstSvc.Name != "" {
-		Cfg.DstSvc.IP = getServiceClusterIP(Cfg.DstSvc.Namespace, Cfg.DstSvc.Name)
+		Cfg.DstSvc.SvcEndpoint = getServiceClusterIP(Cfg.DstSvc.Namespace, Cfg.DstSvc.Name)
 	}
 }
 
@@ -90,8 +89,5 @@ func getPodNetnsHandle(namespace string, podName string) netns.NsHandle {
 func Cleanup() {
 	if Cfg.SrcPod.NsHandle.IsOpen() {
 		Cfg.SrcPod.NsHandle.Close()
-	}
-	if Cfg.DstPod.NsHandle.IsOpen() {
-		Cfg.DstPod.NsHandle.Close()
 	}
 }

@@ -23,13 +23,14 @@ func getKubernetesClient(kubeconfigPath string) (*kubernetes.Clientset, error) {
 	return clientset, nil
 }
 
-func getServiceClusterIP(namespace string, serviceName string) string {
+func getServiceClusterIP(namespace string, serviceName string) Endpoint {
 	service, err := clientset.CoreV1().Services(namespace).Get(serviceName, metav1.GetOptions{})
 	if err != nil {
 		fmt.Printf("Error fetching %s service in %s ns. Error: %v", serviceName, namespace, err)
-		return ""
+		return Endpoint{}
 	}
-	return service.Spec.ClusterIP
+	// Return one port only
+	return Endpoint{IP: service.Spec.ClusterIP, Port: service.Spec.Ports[0].Port}
 }
 
 func getPodIPFromName(namespace string, podName string) string {
