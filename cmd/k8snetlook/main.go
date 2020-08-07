@@ -42,7 +42,7 @@ func printUsage() {
 
 func main() {
 
-	if len(os.Args) < 1 {
+	if len(os.Args) < 2 {
 		fmt.Println("'host' or 'pod' subcommand expected")
 		printUsage()
 		os.Exit(1)
