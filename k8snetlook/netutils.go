@@ -15,6 +15,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+const (
+	icmpTimeout = 4
+)
+
 func getHostGatewayIP() string {
 	routes, err := netlink.RouteList(nil, unix.AF_INET)
 	if err != nil {
@@ -50,8 +54,12 @@ func sendRecvICMPMessage(dstIP string) (bool, error) {
 		return false, fmt.Errorf("Unable to send icmp echo request to %s:%v", dstIP, err)
 	}
 	rb := make([]byte, 1500)
+	c.SetReadDeadline(time.Now().Add(time.Second * icmpTimeout))
 	n, peer, err := c.ReadFrom(rb)
 	if err != nil {
+		if err.(net.Error).Timeout() {
+			return false, fmt.Errorf("ICMP timeout")
+		}
 		return false, fmt.Errorf("Unable to read reply from icmp socket: %v", err)
 	}
 	rm, err := icmp.ParseMessage(ipv4.ICMPTypeEchoReply.Protocol(), rb[:n])
@@ -74,9 +82,10 @@ func sendRecvHTTPMessage(url string, token string, body *[]byte) (int, error) {
 	}
 	client := &http.Client{Transport: tr, Timeout: time.Duration(5) * time.Second}
 	req, err := http.NewRequest("GET", url, nil)
-	req.Header.Add("Authorization", "Bearer "+token)
+	if token != "" {
+		req.Header.Add("Authorization", "Bearer "+token)
+	}
 	res, err := client.Do(req)
-	//res, err := client.Get(url)
 	if err != nil {
 		return -1, fmt.Errorf("HTTP request to %s failed: %v", url, err)
 	}
