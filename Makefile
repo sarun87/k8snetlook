@@ -13,7 +13,7 @@ BINARY=k8snetlook
 PWD=$(shell pwd)
 BUILD_DIR=${PWD}/bin
 
-.PHONY: all k8snetlook-linux clean k8snetlook-osx
+.PHONY: all k8snetlook-linux clean k8snetlook-osx vet test
 
 all: k8snetlook-linux
 
@@ -26,6 +26,14 @@ k8snetlook-osx:
 		mkdir -p ${BUILD_DIR}
 		go mod tidy
 		CGO_ENABLED=${CGO_ENABLED} GOARCH=${GOARCH} GOOS=darwin go build -o ${BUILD_DIR}/${BINARY}-osx ${PWD}/cmd/k8snetlook
+
+vet:
+		go mod tidy
+		CGO_ENABLED=${CGO_ENABLED} GOARCH=${GOARCH} GOOS=darwin go vet ./...
+
+test:
+		go mod tidy
+		CGO_ENABLED=${CGO_ENABLED} GOARCH=${GOARCH} GOOS=darwin go test -v ./...
 
 clean: 
 		rm -rf ${BUILD_DIR}
