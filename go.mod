@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
-	github.com/googleapis/gnostic v0.5.1 // indirect
+	github.com/googleapis/gnostic v0.4.0 // indirect
 	github.com/imdario/mergo v0.3.10 // indirect
 	github.com/stretchr/testify v1.6.1 // indirect
 	github.com/vishvananda/netlink v1.1.0
