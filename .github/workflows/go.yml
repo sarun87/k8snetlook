@@ -1,0 +1,39 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.13
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Update dependencies
+      run: |
+        go mod tidy
+
+    - name: Build binary
+      run: make all
+
+    - name: Run go vet
+      run: make vet
+
+    - name: Run Unit Tests
+      run: make test
+
+    - name: Cleanup
+      run: make clean

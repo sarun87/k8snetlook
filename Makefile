@@ -2,13 +2,13 @@ CGO_ENABLED=0
 GOARCH=amd64
 BINARY=k8snetlook
 
-#UNAME_S := $(shell uname -s)
-#ifeq (${UNAME_S},Linux)
-#  GOOS=linux
-#endif
-#ifeq (${UNAME_S},Darwin)
-#  GOOS=darwin
-#endif
+UNAME_S := $(shell uname -s)
+ifeq (${UNAME_S},Linux)
+  GOOS=linux
+endif
+ifeq (${UNAME_S},Darwin)
+  GOOS=darwin
+endif
 
 PWD=$(shell pwd)
 BUILD_DIR=${PWD}/bin
@@ -29,11 +29,11 @@ k8snetlook-osx:
 
 vet:
 		go mod tidy
-		CGO_ENABLED=${CGO_ENABLED} GOARCH=${GOARCH} GOOS=darwin go vet ./...
+		CGO_ENABLED=${CGO_ENABLED} GOARCH=${GOARCH} GOOS=${GOOS} go vet ./...
 
 test:
 		go mod tidy
-		CGO_ENABLED=${CGO_ENABLED} GOARCH=${GOARCH} GOOS=darwin go test -v ./...
+		sudo CGO_ENABLED=${CGO_ENABLED} GOARCH=${GOARCH} GOOS=${GOOS} go test -v ./...
 
 clean: 
 		rm -rf ${BUILD_DIR}
