@@ -8,6 +8,7 @@ func TestSendRcvICMPMessageSuccess(t *testing.T) {
 	ret, err := sendRecvICMPMessage("127.0.0.1")
 	if err != nil {
 		t.Errorf("ICMP reply expected from localhost. Received error: %s", err)
+		return
 	}
 	if ret != true {
 		t.Errorf("Expected (true, nil) but received (false, nil). received nil for error")

@@ -55,25 +55,29 @@ func sendRecvICMPMessage(dstIP string) (bool, error) {
 	}
 	rb := make([]byte, 1500)
 	c.SetReadDeadline(time.Now().Add(time.Second * icmpTimeout))
-	n, peer, err := c.ReadFrom(rb)
-	if err != nil {
-		if err.(net.Error).Timeout() {
-			return false, fmt.Errorf("ICMP timeout")
+	for tries := 0; tries < 2; tries++ {
+		n, peer, err := c.ReadFrom(rb)
+		if err != nil {
+			if err.(net.Error).Timeout() {
+				return false, fmt.Errorf("ICMP timeout")
+			}
+			return false, fmt.Errorf("Unable to read reply from icmp socket: %v", err)
 		}
-		return false, fmt.Errorf("Unable to read reply from icmp socket: %v", err)
+		rm, err := icmp.ParseMessage(ipv4.ICMPTypeEchoReply.Protocol(), rb[:n])
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse ICMP message:%v", err)
+		}
+		switch rm.Type {
+		case ipv4.ICMPTypeEchoReply:
+			fmt.Printf("    got reflection from %v\n", peer)
+			return true, nil
+		default:
+			fmt.Printf("    got %+v; want echo reply\n", rm)
+			// Try multiple messages
+		}
 	}
-	rm, err := icmp.ParseMessage(ipv4.ICMPTypeEchoReply.Protocol(), rb[:n])
-	if err != nil {
-		return false, fmt.Errorf("Unable to parse ICMP message:%v", err)
-	}
-	switch rm.Type {
-	case ipv4.ICMPTypeEchoReply:
-		fmt.Printf("    got reflection from %v\n", peer)
-		return true, nil
-	default:
-		fmt.Printf("    got %+v; want echo reply\n", rm)
-		return false, nil
-	}
+	// Got ICMP type but not an echo reply
+	return false, nil
 }
 
 func sendRecvHTTPMessage(url string, token string, body *[]byte) (int, error) {
