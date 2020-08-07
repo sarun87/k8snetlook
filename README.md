@@ -1,3 +1,5 @@
+![master](https://github.com/sarun87/k8snetlook/workflows/Build%20&%20Test/badge.svg?branch=master)
+
 # k8snetlook
 
 Kubernetes Network Problem Detector
