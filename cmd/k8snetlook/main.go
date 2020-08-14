@@ -79,8 +79,8 @@ func validateArgs() {
 		printUsage()
 		os.Exit(1)
 	}
-	if podDebugging && k8snetlook.Cfg.SrcPod.Name == "" {
-		fmt.Printf("error: srcpodname flag required for pod debugging\n\n")
+	if podDebugging && (k8snetlook.Cfg.SrcPod.Name == "" || k8snetlook.Cfg.SrcPod.Namespace == "") {
+		fmt.Printf("error: srcpodname flag and srcpodns required for pod debugging\n\n")
 		podCmd.Usage()
 		os.Exit(1)
 	}
