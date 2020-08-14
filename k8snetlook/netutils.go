@@ -33,11 +33,13 @@ func getHostGatewayIP() string {
 }
 
 func sendRecvICMPMessage(dstIP string) (bool, error) {
+	// Listen on all IPs
 	c, err := icmp.ListenPacket("ip4:icmp", "0.0.0.0")
 	if err != nil {
 		return false, fmt.Errorf("Unable to open icmp socket for ping test: %v", err)
 	}
 	defer c.Close()
+	// Create icmp message
 	wm := icmp.Message{
 		Type: ipv4.ICMPTypeEcho, Code: 0,
 		Body: &icmp.Echo{
@@ -45,16 +47,19 @@ func sendRecvICMPMessage(dstIP string) (bool, error) {
 			Data: []byte("K8SNETLOOK-R-U-THERE"),
 		},
 	}
+	// convert icmp message to byte string
 	wb, err := wm.Marshal(nil)
 	if err != nil {
 		return false, fmt.Errorf("Unable to convert icmp echo message to byte string: %v", err)
 	}
+
 	fmt.Printf("    ping: Sending echo request to %s   ......", dstIP)
 	if _, err := c.WriteTo(wb, &net.IPAddr{IP: net.ParseIP(dstIP)}); err != nil {
 		return false, fmt.Errorf("Unable to send icmp echo request to %s:%v", dstIP, err)
 	}
 	rb := make([]byte, 1500)
 	c.SetReadDeadline(time.Now().Add(time.Second * icmpTimeout))
+	// Read reply. Try twice. Discard echo request if read back on 127.0.0.1 (Needed for unit tests)
 	for tries := 0; tries < 2; tries++ {
 		n, peer, err := c.ReadFrom(rb)
 		if err != nil {
@@ -63,10 +68,12 @@ func sendRecvICMPMessage(dstIP string) (bool, error) {
 			}
 			return false, fmt.Errorf("Unable to read reply from icmp socket: %v", err)
 		}
+		// Check if read message is an ICMP message
 		rm, err := icmp.ParseMessage(ipv4.ICMPTypeEchoReply.Protocol(), rb[:n])
 		if err != nil {
 			return false, fmt.Errorf("Unable to parse ICMP message:%v", err)
 		}
+		// Check to see if ICMP message type is ECHO reply
 		switch rm.Type {
 		case ipv4.ICMPTypeEchoReply:
 			fmt.Printf("    got reflection from %v\n", peer)
