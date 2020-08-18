@@ -63,6 +63,7 @@ By having to initialize kubernetes client-set, the tool intrinsically performs A
 | K8s-apiserver ClusterIP check (https)            | K8s-apiserver ClusterIP check (https)              |
 | K8s-apiserver individual endpoints check (https) | K8s-apiserver individual endpoints check (https)   |
 | K8s-apiserver health-check api (livez)           | Destination Pod IP connectivity (icmp)             |
+|                                                  | External IP connectivity (icmp)                    |
 
 ## Contribute
 PRs welcome :)

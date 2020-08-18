@@ -20,12 +20,12 @@ all: k8snetlook-linux
 k8snetlook-linux: 
 		mkdir -p ${BUILD_DIR}
 		go mod tidy
-		CGO_ENABLED=${CGO_ENABLED} GOARCH=${GOARCH} GOOS=linux go build -o ${BUILD_DIR}/${BINARY} ${PWD}/cmd/k8snetlook
+		CGO_ENABLED=${CGO_ENABLED} GOARCH=${GOARCH} GOOS=linux go build -ldflags="-s -w" -o ${BUILD_DIR}/${BINARY} ${PWD}/cmd/k8snetlook
 
 k8snetlook-osx:
 		mkdir -p ${BUILD_DIR}
 		go mod tidy
-		CGO_ENABLED=${CGO_ENABLED} GOARCH=${GOARCH} GOOS=darwin go build -o ${BUILD_DIR}/${BINARY}-osx ${PWD}/cmd/k8snetlook
+		CGO_ENABLED=${CGO_ENABLED} GOARCH=${GOARCH} GOOS=darwin go build -ldflags="-s -w" -o ${BUILD_DIR}/${BINARY}-osx ${PWD}/cmd/k8snetlook
 
 vet:
 		go mod tidy
