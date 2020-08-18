@@ -51,6 +51,13 @@ func RunPodChecks() {
 		fmt.Println("----> [From SrcPod] Running DstPod connectivity check..")
 		RunDstConnectivityCheck(Cfg.DstPod.IP, &passingPodChecks)
 	}
+
+	if Cfg.ExternalIP != "" {
+		totalPodChecks++
+		fmt.Println("----> [From SrcPod] Running externalIP connectivity check..")
+		RunDstConnectivityCheck(Cfg.ExternalIP, &passingPodChecks)
+	}
+
 	// Change network ns back to host
 	netns.Set(hostNsHandle)
 
