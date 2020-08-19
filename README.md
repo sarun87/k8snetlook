@@ -36,6 +36,29 @@ k8snetlook pod -config /etc/kubernetes/admin.yaml -srcpodname nginx-sdvyx -srcpo
 * The binary is run on the host where the Pod with connectivity issues are present
 * If the tool isn't able to initialize k8s client using specified kubeconfig, the tool will fail (FUTURE? run other tests that don't need k8s information)
 
+## Download binary & run
+64-bit linux binary is available for download from the [Releases](https://github.com/sarun87/k8snetlook/releases) page.
+
+* download binary to a host
+```
+wget https://github.com/sarun87/k8snetlook/releases/download/v0.1/k8snetlook
+```
+* Make the downloaded file executable
+```
+chmod u+x k8snetlook
+```
+* Run tool using sudo or as root
+```
+./k8snetlook
+'host' or 'pod' subcommand expected
+
+usage: k8snetlook subcommand [sub-command-options] [-config path-to-kube-config]
+
+valid subcommands
+  pod       Debug Pod & host networking
+  host      Debug host networking only
+```
+
 ## How to build from source
 To build tool from source, run `make` as follows:
 ```
@@ -57,13 +80,16 @@ make k8snetlook-osx
 
 By having to initialize kubernetes client-set, the tool intrinsically performs API connectivity check via K8s-apiserver's VIP/External Loadbalancer in case of highly available k8s-apiserver clusters
 
-| Host Checks                                      | Pod Checks                                         |
-| ------------------------------------------------ | -------------------------------------------------- |
-| Default gateway connectivity (icmp)              | Default gateway connectivity (icmp)                |
-| K8s-apiserver ClusterIP check (https)            | K8s-apiserver ClusterIP check (https)              |
-| K8s-apiserver individual endpoints check (https) | K8s-apiserver individual endpoints check (https)   |
-| K8s-apiserver health-check api (livez)           | Destination Pod IP connectivity (icmp)             |
-|                                                  | External IP connectivity (icmp)                    |
+| Host Checks                                      | Pod Checks                                       |
+| ------------------------------------------------ | ------------------------------------------------ |
+| Default gateway connectivity (icmp)              | Default gateway connectivity (icmp)              |
+| K8s-apiserver ClusterIP check (https)            | K8s-apiserver ClusterIP check (https)            |
+| K8s-apiserver individual endpoints check (https) | K8s-apiserver individual endpoints check (https) |
+| K8s-apiserver health-check api (livez)           | Destination Pod IP connectivity (icmp)           |
+|                                                  | External IP connectivity (icmp)                  |
+|                                                  | K8s DNS name lookup check (kubernetes.local)     |
+|                                                  | K8s DNS name lookup for specific service check   |
+
 
 ## Contribute
 PRs welcome :)

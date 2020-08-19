@@ -7,6 +7,7 @@ require (
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/googleapis/gnostic v0.4.0 // indirect
 	github.com/imdario/mergo v0.3.10 // indirect
+	github.com/miekg/dns v1.1.31
 	github.com/stretchr/testify v1.6.1 // indirect
 	github.com/vishvananda/netlink v1.1.0
 	github.com/vishvananda/netns v0.0.0-20191106174202-0a2b9b5464df
