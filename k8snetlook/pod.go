@@ -19,7 +19,7 @@ func RunPodChecks() {
 
 	fmt.Println("----------- Pod Checks -----------")
 
-	totalPodChecks = 3
+	totalPodChecks = 4
 	// Lock OS thread to prevent ns change
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
@@ -45,6 +45,9 @@ func RunPodChecks() {
 	RunKubeAPIEndpointIPConnectivityCheck(&passingPodChecks)
 	fmt.Println("----> [From SrcPod] Running default gateway connectivity check..")
 	RunGatewayConnectivityCheck(&passingPodChecks)
+	fmt.Println("----> [From SrcPod] Running DNS lookup test (kubernetes.default)..")
+	RunK8sDNSLookupCheck(Cfg.KubeDNSService.IP, "kubernetes", "default",
+		Cfg.KubeAPIService.IP, &passingPodChecks)
 
 	if Cfg.DstPod.IP != "" {
 		totalPodChecks++
@@ -56,6 +59,13 @@ func RunPodChecks() {
 		totalPodChecks++
 		fmt.Println("----> [From SrcPod] Running externalIP connectivity check..")
 		RunDstConnectivityCheck(Cfg.ExternalIP, &passingPodChecks)
+	}
+
+	if Cfg.DstSvc.SvcEndpoint.IP != "" {
+		totalPodChecks++
+		fmt.Println("----> [From SrcPod] Running DstSvc DNS lookup check..")
+		RunK8sDNSLookupCheck(Cfg.KubeDNSService.IP, Cfg.DstSvc.Name, Cfg.DstSvc.Namespace,
+			Cfg.DstSvc.SvcEndpoint.IP, &passingPodChecks)
 	}
 
 	// Change network ns back to host

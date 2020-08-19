@@ -58,15 +58,15 @@ func InitK8sInfo() {
 	Cfg.KubeDNSService = getServiceClusterIP("kube-system", "kube-dns")
 	Cfg.HostGatewayIP = getHostGatewayIP()
 	Cfg.SrcPod.NsHandle = netns.NsHandle(-1)
-	if Cfg.SrcPod.Name != "" {
+	if Cfg.SrcPod.Name != "" && Cfg.SrcPod.Namespace != "" {
 		Cfg.SrcPod.IP = getPodIPFromName(Cfg.SrcPod.Namespace, Cfg.SrcPod.Name)
 		Cfg.SrcPod.NsHandle = getPodNetnsHandle(Cfg.SrcPod.Namespace, Cfg.SrcPod.Name)
 	}
 	Cfg.DstPod.NsHandle = netns.NsHandle(-1)
-	if Cfg.DstPod.Name != "" {
+	if Cfg.DstPod.Name != "" && Cfg.DstPod.Namespace != "" {
 		Cfg.DstPod.IP = getPodIPFromName(Cfg.DstPod.Namespace, Cfg.DstPod.Name)
 	}
-	if Cfg.DstSvc.Name != "" {
+	if Cfg.DstSvc.Name != "" && Cfg.DstSvc.Namespace != "" {
 		Cfg.DstSvc.SvcEndpoint = getServiceClusterIP(Cfg.DstSvc.Namespace, Cfg.DstSvc.Name)
 	}
 }

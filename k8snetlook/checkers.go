@@ -102,3 +102,24 @@ func RunAPIServerHealthCheck(checkCounter *int) {
 		*checkCounter++
 	}
 }
+
+func RunK8sDNSLookupCheck(dnsServerIP, dstSvcName, dstSvcNamespace, dstSvcExpectedIP string, checkCounter *int) {
+	dnsServerURL := fmt.Sprintf("%s:53", dnsServerIP)
+	// TODO: Fetch domain information from cluster
+	svcfqdn := fmt.Sprintf("%s.%s.svc.cluster.local.", dstSvcName, dstSvcNamespace)
+	ips, err := runDNSLookupUsingCustomResolver(dnsServerURL, svcfqdn)
+	if err != nil {
+		fmt.Printf("  (Failed) Unable to run dns lookup to %s, error: %v\n", svcfqdn, err)
+		return
+	}
+	// Check if the resolved IP matches with the IP reported by K8s
+	for _, ip := range ips {
+		if ip == dstSvcExpectedIP {
+			*checkCounter++
+			fmt.Printf("  (Passed) dns lookup to %s returned: %v. Expected: %s\n", svcfqdn, ips, ip)
+			return
+		}
+	}
+	fmt.Printf("  (Failed) Lookup of %s retured: %v, expected: %s\n", svcfqdn, ips, dstSvcExpectedIP)
+	return
+}
