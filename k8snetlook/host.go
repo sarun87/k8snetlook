@@ -5,25 +5,24 @@ import (
 )
 
 const (
-	totalHostChecks = 4
+	TotalHostChecks = 4
 )
 
 var (
-	passingHostChecks int
+	PassingHostChecks int
 )
 
 func RunHostChecks() {
 	fmt.Println("----------- Host Checks -----------")
 
 	fmt.Println("----> [From Host] Running default gateway connectivity check..")
-	RunGatewayConnectivityCheck(&passingHostChecks)
+	RunGatewayConnectivityCheck(&PassingHostChecks)
 	fmt.Println("----> [From Host] Running Kube service IP connectivity check..")
-	RunKubeAPIServiceIPConnectivityCheck(&passingHostChecks)
+	RunKubeAPIServiceIPConnectivityCheck(&PassingHostChecks)
 	fmt.Println("----> [From Host] Running Kube API Server Endpoint IP connectivity check..")
-	RunKubeAPIEndpointIPConnectivityCheck(&passingHostChecks)
+	RunKubeAPIEndpointIPConnectivityCheck(&PassingHostChecks)
 	fmt.Println("----> [From Host] Running Kube API Server health check..")
-	RunAPIServerHealthCheck(&passingHostChecks)
+	RunAPIServerHealthCheck(&PassingHostChecks)
 
-	fmt.Println("----------- Host Checks Summary -----------")
-	fmt.Printf("Passed checks: %d/%d\n", passingHostChecks, totalHostChecks)
+	fmt.Println("-----------------------------------")
 }

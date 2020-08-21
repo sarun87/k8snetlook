@@ -80,15 +80,17 @@ make k8snetlook-osx
 
 By having to initialize kubernetes client-set, the tool intrinsically performs API connectivity check via K8s-apiserver's VIP/External Loadbalancer in case of highly available k8s-apiserver clusters
 
-| Host Checks                                      | Pod Checks                                       |
-| ------------------------------------------------ | ------------------------------------------------ |
-| Default gateway connectivity (icmp)              | Default gateway connectivity (icmp)              |
-| K8s-apiserver ClusterIP check (https)            | K8s-apiserver ClusterIP check (https)            |
-| K8s-apiserver individual endpoints check (https) | K8s-apiserver individual endpoints check (https) |
-| K8s-apiserver health-check api (livez)           | Destination Pod IP connectivity (icmp)           |
-|                                                  | External IP connectivity (icmp)                  |
-|                                                  | K8s DNS name lookup check (kubernetes.local)     |
-|                                                  | K8s DNS name lookup for specific service check   |
+| Host Checks                                      | Pod Checks                                              |
+| ------------------------------------------------ | ------------------------------------------------------- |
+| Default gateway connectivity (icmp)              | Default gateway connectivity (icmp)                     |
+| K8s-apiserver ClusterIP check (https)            | K8s-apiserver ClusterIP check (https)                   |
+| K8s-apiserver individual endpoints check (https) | K8s-apiserver individual endpoints check (https)        |
+| K8s-apiserver health-check api (livez)           | Destination Pod IP connectivity (icmp)                  |
+|                                                  | External IP connectivity (icmp)                         |
+|                                                  | K8s DNS name lookup check (kubernetes.local)            |
+|                                                  | K8s DNS name lookup for specific service check          |
+|                                                  | Path MTU discovery between Src & Dst Pod (icmp)         |
+|                                                  | Path MTU discovery between Src Pod & External IP (icmp) |
 
 
 ## Contribute

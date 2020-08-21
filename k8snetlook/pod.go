@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	passingPodChecks int
-	totalPodChecks   int
+	PassingPodChecks int
+	TotalPodChecks   int
 )
 
 func RunPodChecks() {
@@ -19,7 +19,7 @@ func RunPodChecks() {
 
 	fmt.Println("----------- Pod Checks -----------")
 
-	totalPodChecks = 4
+	TotalPodChecks = 4
 	// Lock OS thread to prevent ns change
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
@@ -40,37 +40,42 @@ func RunPodChecks() {
 
 	// Execute checks from within the Pod network ns
 	fmt.Println("----> [From SrcPod] Running Kube service IP connectivity check..")
-	RunKubeAPIServiceIPConnectivityCheck(&passingPodChecks)
+	RunKubeAPIServiceIPConnectivityCheck(&PassingPodChecks)
 	fmt.Println("----> [From SrcPod] Running Kube API Server Endpoint IP connectivity check..")
-	RunKubeAPIEndpointIPConnectivityCheck(&passingPodChecks)
+	RunKubeAPIEndpointIPConnectivityCheck(&PassingPodChecks)
 	fmt.Println("----> [From SrcPod] Running default gateway connectivity check..")
-	RunGatewayConnectivityCheck(&passingPodChecks)
+	RunGatewayConnectivityCheck(&PassingPodChecks)
 	fmt.Println("----> [From SrcPod] Running DNS lookup test (kubernetes.default)..")
 	RunK8sDNSLookupCheck(Cfg.KubeDNSService.IP, "kubernetes", "default",
-		Cfg.KubeAPIService.IP, &passingPodChecks)
+		Cfg.KubeAPIService.IP, &PassingPodChecks)
 
 	if Cfg.DstPod.IP != "" {
-		totalPodChecks++
+		TotalPodChecks++
 		fmt.Println("----> [From SrcPod] Running DstPod connectivity check..")
-		RunDstConnectivityCheck(Cfg.DstPod.IP, &passingPodChecks)
+		RunDstConnectivityCheck(Cfg.DstPod.IP, &PassingPodChecks)
+		TotalPodChecks++
+		fmt.Println("----> [From SrcPod] Running pmtud check for dstIP..")
+		RunMTUProbeToDstIPCheck(Cfg.DstPod.IP, &PassingPodChecks)
 	}
 
 	if Cfg.ExternalIP != "" {
-		totalPodChecks++
+		TotalPodChecks++
 		fmt.Println("----> [From SrcPod] Running externalIP connectivity check..")
-		RunDstConnectivityCheck(Cfg.ExternalIP, &passingPodChecks)
+		RunDstConnectivityCheck(Cfg.ExternalIP, &PassingPodChecks)
+		TotalPodChecks++
+		fmt.Println("----> [From SrcPod] Running pmtud check for externalIP..")
+		RunMTUProbeToDstIPCheck(Cfg.ExternalIP, &PassingPodChecks)
 	}
 
 	if Cfg.DstSvc.SvcEndpoint.IP != "" {
-		totalPodChecks++
+		TotalPodChecks++
 		fmt.Println("----> [From SrcPod] Running DstSvc DNS lookup check..")
 		RunK8sDNSLookupCheck(Cfg.KubeDNSService.IP, Cfg.DstSvc.Name, Cfg.DstSvc.Namespace,
-			Cfg.DstSvc.SvcEndpoint.IP, &passingPodChecks)
+			Cfg.DstSvc.SvcEndpoint.IP, &PassingPodChecks)
 	}
 
 	// Change network ns back to host
 	netns.Set(hostNsHandle)
 
-	fmt.Println("----------- Pod Checks Summary -----------")
-	fmt.Printf("Passed checks: %d/%d\n", passingPodChecks, totalPodChecks)
+	fmt.Println("-----------------------------------")
 }

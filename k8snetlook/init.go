@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/sarun87/k8snetlook/netutils"
 	"github.com/vishvananda/netns"
 )
 
@@ -56,7 +57,7 @@ func InitKubeClient(kubeconfigPath string) {
 func InitK8sInfo() {
 	Cfg.KubeAPIService = getServiceClusterIP("default", "kubernetes")
 	Cfg.KubeDNSService = getServiceClusterIP("kube-system", "kube-dns")
-	Cfg.HostGatewayIP = getHostGatewayIP()
+	Cfg.HostGatewayIP = netutils.GetHostGatewayIP()
 	Cfg.SrcPod.NsHandle = netns.NsHandle(-1)
 	if Cfg.SrcPod.Name != "" && Cfg.SrcPod.Namespace != "" {
 		Cfg.SrcPod.IP = getPodIPFromName(Cfg.SrcPod.Namespace, Cfg.SrcPod.Name)

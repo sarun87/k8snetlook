@@ -69,7 +69,11 @@ func main() {
 	k8snetlook.RunHostChecks()
 	if podDebugging == true {
 		k8snetlook.RunPodChecks()
+		fmt.Println("----------- Pod Checks Summary -----------")
+		fmt.Printf("Passed checks: %d/%d\n", k8snetlook.PassingPodChecks, k8snetlook.TotalPodChecks)
 	}
+	fmt.Println("----------- Host Checks Summary -----------")
+	fmt.Printf("Passed checks: %d/%d\n", k8snetlook.PassingHostChecks, k8snetlook.TotalHostChecks)
 }
 
 func validateArgs() {
