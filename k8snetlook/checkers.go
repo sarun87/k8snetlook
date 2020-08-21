@@ -2,16 +2,19 @@ package k8snetlook
 
 import (
 	"fmt"
+	"net"
 	"net/http"
+
+	"github.com/sarun87/k8snetlook/netutils"
 )
 
 func RunGatewayConnectivityCheck(checkCounter *int) {
-	pass, err := sendRecvICMPMessage(Cfg.HostGatewayIP)
+	pass, err := netutils.SendRecvICMPMessage(Cfg.HostGatewayIP, 64, true)
 	if err != nil {
 		fmt.Printf("  (Failed) Error running RunGatewayConnectivityCheck. Error: %v\n", err)
 		return
 	}
-	if pass {
+	if pass == 0 {
 		*checkCounter++
 		fmt.Println("  (Passed) Gateway connectivity check completed successfully")
 	} else {
@@ -20,12 +23,12 @@ func RunGatewayConnectivityCheck(checkCounter *int) {
 }
 
 func RunDstConnectivityCheck(dstIP string, checkCounter *int) {
-	pass, err := sendRecvICMPMessage(dstIP)
+	pass, err := netutils.SendRecvICMPMessage(dstIP, 64, true)
 	if err != nil {
 		fmt.Printf("  (Failed) Error running connectivity check to %s. Error: %v\n", dstIP, err)
 		return
 	}
-	if pass {
+	if pass == 0 {
 		*checkCounter++
 		fmt.Printf("  (Passed) Connectivity check to destination %s completed successfully\n", dstIP)
 	} else {
@@ -38,7 +41,7 @@ func RunKubeAPIServiceIPConnectivityCheck(checkCounter *int) {
 	// HTTP 401 return code is a successful check
 	url := fmt.Sprintf("https://%s:%d", Cfg.KubeAPIService.IP, Cfg.KubeAPIService.Port)
 	var body []byte
-	responseCode, err := sendRecvHTTPMessage(url, "", &body)
+	responseCode, err := netutils.SendRecvHTTPMessage(url, "", &body)
 	if err != nil {
 		fmt.Printf("  (Failed) Error running RunKubeAPIServiceIPConnectivityCheck. Error: %v\n", err)
 		return
@@ -61,7 +64,7 @@ func RunKubeAPIEndpointIPConnectivityCheck(checkCounter *int) {
 		url := fmt.Sprintf("https://%s:%d", ep.IP, ep.Port)
 		fmt.Printf("  checking endpoint: %s ........", url)
 		var body []byte
-		responseCode, err := sendRecvHTTPMessage(url, "", &body)
+		responseCode, err := netutils.SendRecvHTTPMessage(url, "", &body)
 		if err != nil {
 			fmt.Printf("    failed connectivity check. Error: %v\n", err)
 			continue
@@ -89,7 +92,7 @@ func RunAPIServerHealthCheck(checkCounter *int) {
 		return
 	}
 	var body []byte
-	responseCode, err := sendRecvHTTPMessage(url, svcAccountToken, &body)
+	responseCode, err := netutils.SendRecvHTTPMessage(url, svcAccountToken, &body)
 	if err != nil {
 		fmt.Printf("    Unable to fetch api server check. Error: %v\n", err)
 		return
@@ -107,7 +110,7 @@ func RunK8sDNSLookupCheck(dnsServerIP, dstSvcName, dstSvcNamespace, dstSvcExpect
 	dnsServerURL := fmt.Sprintf("%s:53", dnsServerIP)
 	// TODO: Fetch domain information from cluster
 	svcfqdn := fmt.Sprintf("%s.%s.svc.cluster.local.", dstSvcName, dstSvcNamespace)
-	ips, err := runDNSLookupUsingCustomResolver(dnsServerURL, svcfqdn)
+	ips, err := netutils.RunDNSLookupUsingCustomResolver(dnsServerURL, svcfqdn)
 	if err != nil {
 		fmt.Printf("  (Failed) Unable to run dns lookup to %s, error: %v\n", svcfqdn, err)
 		return
@@ -122,4 +125,30 @@ func RunK8sDNSLookupCheck(dnsServerIP, dstSvcName, dstSvcNamespace, dstSvcExpect
 	}
 	fmt.Printf("  (Failed) Lookup of %s retured: %v, expected: %s\n", svcfqdn, ips, dstSvcExpectedIP)
 	return
+}
+
+func RunMTUProbeToDstIPCheck(dstIP string, checkCounter *int) {
+	supportedMTU, err := netutils.PMTUProbeToDestIP(dstIP)
+	if err != nil {
+		fmt.Printf("   (Failed) Unable to run pmtud for %s. Error: %v\n", dstIP, err)
+		return
+	}
+	fmt.Printf("   Maximum MTU that works for destination IP: %s is %d\n", dstIP, supportedMTU)
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		fmt.Printf("   Unable to fetch network interfaces. Error: %v\n", err)
+		return
+	}
+	for _, iface := range ifaces {
+		// If loopback device, skip
+		if iface.Flags&net.FlagLoopback == net.FlagLoopback {
+			continue
+		}
+		if iface.MTU > supportedMTU {
+			fmt.Printf("  Iface %s has higher mtu than supported path mtu. Has: %d, should be less than %d\n", iface.Name, iface.MTU, supportedMTU)
+		}
+	}
+	*checkCounter++
+	// TODO: Check for the outgoing interface mtu and compare
+	fmt.Printf("   (Passed) MTU looks good.. Retured MTU: %d\n", supportedMTU)
 }

@@ -1,23 +1,23 @@
-package k8snetlook
+package netutils
 
 import (
 	"testing"
 )
 
 func TestSendRcvICMPMessageSuccess(t *testing.T) {
-	ret, err := sendRecvICMPMessage("127.0.0.1")
+	ret, err := SendRecvICMPMessage("127.0.0.1", 64, true)
 	if err != nil {
 		t.Errorf("ICMP reply expected from localhost. Received error: %s", err)
 		return
 	}
-	if ret != true {
-		t.Errorf("Expected (true, nil) but received (false, nil). received nil for error")
+	if ret != 0 {
+		t.Errorf("Expected (0, nil) but received (%d, nil).", ret)
 	}
 }
 
 func TestSendRcvICMPMessageFailure(t *testing.T) {
 	// Using arbitary IP for failure test
-	_, err := sendRecvICMPMessage("192.192.192.192")
+	_, err := SendRecvICMPMessage("192.192.192.192", 64, true)
 	if err == nil {
 		t.Errorf("Expected ICMP to arbitary IP to fail with a timeout")
 	}
