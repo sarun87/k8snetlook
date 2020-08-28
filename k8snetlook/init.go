@@ -1,10 +1,12 @@
 package k8snetlook
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/docker/docker/client"
 	"github.com/sarun87/k8snetlook/netutils"
 	"github.com/vishvananda/netns"
 )
@@ -79,8 +81,19 @@ func getPodNetnsHandle(namespace string, podName string) netns.NsHandle {
 		Cleanup()
 		os.Exit(1)
 	}
-	fmt.Println("src pod container id:", containerID)
-	nshandle, err := netns.GetFromDocker(strings.TrimPrefix(containerID, "docker://"))
+	containerID = strings.TrimPrefix(containerID, "docker://")
+	//fmt.Println("src pod container id:", containerID)
+	cli, err := client.NewClient(client.DefaultDockerHost, client.DefaultVersion, nil, nil)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	containerJSON, err := cli.ContainerInspect(context.Background(), containerID)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	nshandle, err := netns.GetFromPid(containerJSON.State.Pid)
 	if err != nil {
 		fmt.Printf("Unable to fetch netns handle for pod %s. Error: %v Exiting..\n", podName, err)
 		Cleanup()
