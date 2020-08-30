@@ -2,7 +2,9 @@ package k8snetlook
 
 import (
 	"fmt"
+	"time"
 
+	log "github.com/sarun87/k8snetlook/logutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -10,34 +12,35 @@ import (
 
 var clientset *kubernetes.Clientset
 
-func getKubernetesClient(kubeconfigPath string) (*kubernetes.Clientset, error) {
+func initKubernetesClient(kubeconfigPath string) error {
 	// use the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	clientset, err := kubernetes.NewForConfig(config)
+	config.Timeout = time.Second * 4
+	clientset, err = kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return clientset, nil
+	return nil
 }
 
-func getServiceClusterIP(namespace string, serviceName string) Endpoint {
+func getServiceClusterIP(namespace string, serviceName string) (Endpoint, error) {
 	service, err := clientset.CoreV1().Services(namespace).Get(serviceName, metav1.GetOptions{})
 	if err != nil {
-		fmt.Printf("Error fetching %s service in %s ns. Error: %v", serviceName, namespace, err)
-		return Endpoint{}
+		log.Error("Error fetching %s service in %s ns. Error: %v", serviceName, namespace, err)
+		return Endpoint{}, err
 	}
 	// Return one port only
-	return Endpoint{IP: service.Spec.ClusterIP, Port: service.Spec.Ports[0].Port}
+	return Endpoint{IP: service.Spec.ClusterIP, Port: service.Spec.Ports[0].Port}, nil
 }
 
 func getPodIPFromName(namespace string, podName string) string {
 	// if namespace == "" i.e metav1.NamespaceAll, then all pods are listed
 	pod, err := clientset.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
 	if err != nil {
-		fmt.Printf("Error fetching %s pod in %s ns. Error: %v", podName, namespace, err)
+		log.Error("Error fetching %s pod in %s ns. Error: %v", podName, namespace, err)
 		return ""
 	}
 	return pod.Status.PodIP
@@ -47,7 +50,7 @@ func getContainerIDFromPod(namespace string, podName string) string {
 	// if namespace == "" i.e metav1.NamespaceAll, then all pods are listed
 	pod, err := clientset.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
 	if err != nil {
-		fmt.Printf("Error fetching %s pod in %s ns. Error: %v", podName, namespace, err)
+		log.Error("Error fetching %s pod in %s ns. Error: %v", podName, namespace, err)
 		return ""
 	}
 	// Pod should have alteast one container (pause)
@@ -58,7 +61,7 @@ func getEndpointsFromService(namespace string, serviceName string) []Endpoint {
 	var ret []Endpoint
 	endpoints, err := clientset.CoreV1().Endpoints(namespace).Get(serviceName, metav1.GetOptions{})
 	if err != nil {
-		fmt.Printf("Error fetching %s service endpoints in %s ns. Error: %v", serviceName, namespace, err)
+		log.Error("Error fetching %s service endpoints in %s ns. Error: %v", serviceName, namespace, err)
 		return ret
 	}
 	for _, subset := range endpoints.Subsets {

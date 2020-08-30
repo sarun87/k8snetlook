@@ -13,7 +13,7 @@ endif
 PWD=$(shell pwd)
 BUILD_DIR=${PWD}/bin
 
-.PHONY: all k8snetlook-linux clean k8snetlook-osx vet test
+.PHONY: all k8snetlook-linux clean k8snetlook-osx vet test release
 
 all: k8snetlook-linux
 
@@ -37,3 +37,7 @@ test:
 
 clean: 
 		rm -rf ${BUILD_DIR}
+
+release: k8snetlook-linux
+		cd ${BUILD_DIR} && \
+		upx ${BINARY}
