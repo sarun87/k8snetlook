@@ -6,12 +6,15 @@ import (
 	"os"
 
 	"github.com/sarun87/k8snetlook/k8snetlook"
+	log "github.com/sarun87/k8snetlook/logutil"
 )
 
 var (
 	podCmd       *flag.FlagSet // Sub-command for pod debugging
 	hostOnlyCmd  *flag.FlagSet // Sub-command for host debugging
 	podDebugging bool          // Variable to hold debug mode
+	debugLogging bool          // Enable debug logging
+	silent       bool          // Output only errors
 )
 
 func init() {
@@ -25,9 +28,13 @@ func init() {
 	podCmd.StringVar(&k8snetlook.Cfg.DstSvc.Namespace, "dstsvcns", "", "Namespace to which the Pod belongs")
 	podCmd.StringVar(&k8snetlook.Cfg.ExternalIP, "externalip", "", "External IP to test egress traffic flow")
 	podCmd.StringVar(&k8snetlook.Cfg.KubeconfigPath, "config", os.Getenv("KUBECONFIG"), "Path to Kubeconfig")
+	podCmd.BoolVar(&debugLogging, "debug", false, "Enable debug logging to stdout")
+	podCmd.BoolVar(&silent, "silent", false, "Output only errors to stdout")
 
 	hostOnlyCmd = flag.NewFlagSet("host", flag.ExitOnError)
 	hostOnlyCmd.StringVar(&k8snetlook.Cfg.KubeconfigPath, "config", os.Getenv("KUBECONFIG"), "Path to Kubeconfig")
+	hostOnlyCmd.BoolVar(&debugLogging, "debug", false, "Enable debug logging to stdout")
+	hostOnlyCmd.BoolVar(&silent, "silent", false, "Output only errors to stdout. Return result as json")
 
 }
 
@@ -62,18 +69,31 @@ func main() {
 
 	validateArgs()
 
-	k8snetlook.InitKubeClient(k8snetlook.Cfg.KubeconfigPath)
-	k8snetlook.InitK8sInfo()
+	logLevel := log.INFO
+	if debugLogging {
+		logLevel = log.DEBUG
+	}
+	if silent {
+		logLevel = log.ERROR
+	}
+
+	log.SetLogLevel(logLevel)
+
+	if err := k8snetlook.Init(k8snetlook.Cfg.KubeconfigPath); err != nil {
+		log.Error("Unable to initialize k8snetlook due to:%v\n", err)
+		return
+	}
 	defer k8snetlook.Cleanup()
 
 	k8snetlook.RunHostChecks()
 	if podDebugging == true {
 		k8snetlook.RunPodChecks()
-		fmt.Println("----------- Pod Checks Summary -----------")
-		fmt.Printf("Passed checks: %d/%d\n", k8snetlook.PassingPodChecks, k8snetlook.TotalPodChecks)
 	}
-	fmt.Println("----------- Host Checks Summary -----------")
-	fmt.Printf("Passed checks: %d/%d\n", k8snetlook.PassingHostChecks, k8snetlook.TotalHostChecks)
+	if silent {
+		fmt.Printf("%s", k8snetlook.GetReportJSON())
+		return
+	}
+	k8snetlook.PrintReport()
 }
 
 func validateArgs() {

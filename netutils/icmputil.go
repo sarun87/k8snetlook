@@ -17,12 +17,14 @@ const (
 	defaultPayloadSize = 64
 )
 
+// sendICMPMessage sends a single ICMP packet over the wire
 // Picked from https://github.com/ipsecdiagtool/ipsecdiagtool project & modified as necessary
 func sendICMPMessage(dstIP string, payloadSize int, dontfragment bool) error {
+	// If an additional payload size isn't specified, use default
 	if payloadSize < defaultPayloadSize {
 		payloadSize = defaultPayloadSize
 	}
-	//IP Layer
+	// IP Layer
 	ip := layers.IPv4{
 		SrcIP:    net.ParseIP("0.0.0.0"),
 		DstIP:    net.ParseIP(dstIP),
@@ -30,6 +32,7 @@ func sendICMPMessage(dstIP string, payloadSize int, dontfragment bool) error {
 		TTL:      64,
 		Protocol: layers.IPProtocolICMPv4,
 	}
+	// ICMP Layer
 	icmp := layers.ICMPv4{
 		TypeCode: layers.CreateICMPv4TypeCode(uint8(ipv4.ICMPTypeEcho), 0),
 	}
@@ -45,11 +48,10 @@ func sendICMPMessage(dstIP string, payloadSize int, dontfragment bool) error {
 	if err != nil {
 		return err
 	}
+	// If dontfragment = True, set the bit in IP Header
 	if dontfragment {
-		//Set "Don't Fragment"-Flag in Header
 		ipHeader.Flags |= ipv4.DontFragment
 	}
-
 	payloadBuf := gopacket.NewSerializeBuffer()
 	//Influence the payload size
 	payloadbytes := []byte(icmpMessageBody)
@@ -96,7 +98,7 @@ func SendRecvICMPMessage(dstIP string, payloadSize int, dontFragment bool) (int,
 
 	// Read reply. Try twice. Discard echo request if read back on 127.0.0.1 (Needed for unit tests)
 	for tries := 0; tries < 2; tries++ {
-		n, peer, err := c.ReadFrom(rb)
+		n, _, err := c.ReadFrom(rb)
 		if err != nil {
 			if err.(net.Error).Timeout() {
 				return -1, fmt.Errorf("ICMP timeout")
@@ -111,18 +113,19 @@ func SendRecvICMPMessage(dstIP string, payloadSize int, dontFragment bool) (int,
 		// Check to see if ICMP message type is ECHO reply
 		switch rm.Type {
 		case ipv4.ICMPTypeEchoReply:
-			fmt.Printf("    got reflection from %v with payload size:%d\n", peer, payloadSize)
+			// Reflection received successfully. Return success
+			// log.Debug("    got reflection from %v with payload size:%d\n", peer, payloadSize)
 			// To check if echo reply is specific to this app, check message
 			// b, _ := rm.Body.Marshal(1)  // 1 : ICMPv4 type protocol number
 			// icmpMessage == string(b[2:2+len(icmpMessageBody)])  // First two bytes: length of body
 			return 0, nil
 		case ipv4.ICMPTypeDestinationUnreachable:
 			if rm.Code == layers.ICMPv4CodeFragmentationNeeded {
-				// fmt.Printf("   Fragmentation required, and DF flag set\n")
+				// log.Debug("   Fragmentation required, and DF flag set\n")
 				return 1, nil
 			}
 		default:
-			//fmt.Printf("    got %+v; want echo reply\n", rm)
+			// log.Debug("    got %+v; want echo reply\n", rm)
 			// Try multiple messages
 		}
 	}

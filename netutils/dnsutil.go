@@ -32,6 +32,8 @@ import (
 }
 */
 
+// RunDNSLookupUsingCustomResolver sends a dns lookup for hostFQDN
+// to DNS server specified by nameserver.
 // run dns lookup using github.com/miekg/dns
 // code referenced from: https://github.com/bogdanovich/dns_resolver
 // nameserver string format: "ip:port"
