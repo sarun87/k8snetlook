@@ -37,7 +37,7 @@ k8snetlook pod -config /etc/kubernetes/admin.yaml -srcpodname nginx-sdvyx -srcpo
 * If the tool isn't able to initialize k8s client using specified kubeconfig, the tool will fail (FUTURE? run other tests that don't need k8s information)
 
 ## Download binary & run
-64-bit linux binary is available for download from the [Releases](https://github.com/sarun87/k8snetlook/releases) page.
+64-bit linux binary is available for download from the [Releases](https://github.com/sarun87/k8snetlook/releases/latest) page.
 
 * download binary to a host
 ```
