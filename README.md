@@ -27,7 +27,7 @@ k8snetlook host -config /etc/kubernetes/admin.yaml
 ```
 To run Pod check which automatically runs host checks as well
 ```
-k8snetlook pod -config /etc/kubernetes/admin.yaml -srcpodname nginx-sdvyx -srcpodns default
+k8snetlook pod -config /etc/kubernetes/admin.yaml -srcpodname bbox-74d847cb47-xtpdn -srcpodns default -dstpodname nginx-6db489d4b7-9l264 -dstpodns default --externalip 8.8.8.8
 ```
 
 ## Caveats
@@ -35,6 +35,19 @@ k8snetlook pod -config /etc/kubernetes/admin.yaml -srcpodname nginx-sdvyx -srcpo
 
 * The binary is run on the host where the Pod with connectivity issues are present
 * If the tool isn't able to initialize k8s client using specified kubeconfig, the tool will fail (FUTURE? run other tests that don't need k8s information)
+
+## Run as a docker container
+Docker image is hosted at sarun87/k8snetlook:<release_tag>. Or build your own docker image using `make docker-image` command
+
+* Command to run the tool as a docker container
+```
+docker run --privileged --pid=host --net=host -v /var/run/docker.sock:/var/run/docker.sock -v $KUBECONFIG:/kubeconfig.yaml sarun87/k8snetlook:v0.2 /k8snetlook host -config /kubeconfig.yaml
+```
+Notes:
+* The above command assumes that the $KUBECONFIG environment variable is pointing to a valid kubeconfig & mounts it within the container
+* Mounts docker socket to be able to interact with docker daemon.
+* Needs privileged context to be set to access pod's network namespace.
+* --net=host: Should run in host network namespace, --pid=host: Run in host pid (proc & sys paths are mounted which is needed to obtain handles to Pod's network namespace)
 
 ## Download binary & run
 64-bit linux binary is available for download from the [Releases](https://github.com/sarun87/k8snetlook/releases/latest) page.
