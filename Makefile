@@ -1,6 +1,7 @@
 CGO_ENABLED=0
 GOARCH=amd64
 BINARY=k8snetlook
+TAG=v0.2
 
 UNAME_S := $(shell uname -s)
 ifeq (${UNAME_S},Linux)
@@ -13,7 +14,7 @@ endif
 PWD=$(shell pwd)
 BUILD_DIR=${PWD}/bin
 
-.PHONY: all k8snetlook-linux clean k8snetlook-osx vet test release
+.PHONY: all k8snetlook-linux clean k8snetlook-osx vet test release docker-image
 
 all: k8snetlook-linux
 
@@ -41,3 +42,6 @@ clean:
 release: k8snetlook-linux
 		cd ${BUILD_DIR} && \
 		upx ${BINARY}
+
+docker-image: release
+		docker build --network host -t sarun87/k8snetlook:${TAG} .
