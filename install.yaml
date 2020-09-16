@@ -1,0 +1,20 @@
+# kubectl create clusterrolebinding netlook --clusterrole=cluster-admin --serviceaccount=kube-system:netlook
+# kubectl create sa netlook -n kube-system
+
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: netpol
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: netpol
+          imagePullPolicy: Always
+          image: arun/netlook:latest
+          command: ["./k8snetlook host -config /Users/jayunit100/.kube/config"]
+      serviceAccount: netlook
+EOF
