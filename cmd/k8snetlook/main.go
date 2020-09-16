@@ -80,7 +80,8 @@ func main() {
 	log.SetLogLevel(logLevel)
 
 	if err := k8snetlook.Init(k8snetlook.Cfg.KubeconfigPath); err != nil {
-		log.Error("Unable to initialize k8snetlook due to:%v\n", err)
+		log.Error("Unable to initialize k8snetlook\n")
+		log.Error("%v\n", err)
 		return
 	}
 	defer k8snetlook.Cleanup()
@@ -98,11 +99,6 @@ func main() {
 
 func validateArgs() {
 	fmt.Println("")
-	if k8snetlook.Cfg.KubeconfigPath == "" {
-		fmt.Println("error: KUBECONFIG env variable not set. Please pass kubeconfig using -config")
-		printUsage()
-		os.Exit(1)
-	}
 	if podDebugging && (k8snetlook.Cfg.SrcPod.Name == "" || k8snetlook.Cfg.SrcPod.Namespace == "") {
 		fmt.Printf("error: srcpodname flag and srcpodns required for pod debugging\n\n")
 		podCmd.Usage()

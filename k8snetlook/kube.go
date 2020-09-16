@@ -7,16 +7,27 @@ import (
 	log "github.com/sarun87/k8snetlook/logutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
 var clientset *kubernetes.Clientset
 
 func initKubernetesClient(kubeconfigPath string) error {
-	// use the current context in kubeconfig
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	// check if running in-cluster. If so initialize client-set using incluster method
+	config, err := rest.InClusterConfig()
 	if err != nil {
-		return err
+		log.Debug("Not running in Pod or unable to fetch config via incluster method. Error:%v", err)
+		log.Debug("Trying from kubeconfig specified via command line flag")
+		// Fall back to using config provided as part of command line arguments
+		// use the current context in kubeconfig
+		if kubeconfigPath == "" {
+			return fmt.Errorf("Not running in Pod & kubeconfig not specified using -config flag")
+		}
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+		if err != nil {
+			return err
+		}
 	}
 	config.Timeout = time.Second * 4
 	clientset, err = kubernetes.NewForConfig(config)
