@@ -45,7 +45,7 @@ docker run --privileged --pid=host --net=host -v /var/run/docker.sock:/var/run/d
 ```
 Notes:
 * The above command assumes that the $KUBECONFIG environment variable is pointing to a valid kubeconfig & mounts it within the container
-* Mounts docker socket to be able to interact with docker daemon.
+* Mounts docker socket needed interact with docker daemon.
 * Needs privileged context to be set to access pod's network namespace.
 * --net=host: Should run in host network namespace, --pid=host: Run in host pid (proc & sys paths are mounted which is needed to obtain handles to Pod's network namespace)
 
@@ -72,22 +72,29 @@ valid subcommands
   host      Debug host networking only
 ```
 
-## How to build from source
-To build tool from source, run `make` as follows:
-```
-make all
-```
-The binary named `k8snetlook` will be built under `root-dir/bin/`
+## Run within K8s
+There are advantages & disadvantages to running a K8s network debugging tool within k8s. Ease of deployment and not requiring ssh access to the host running the problem pod are clear advantages. But the underlying problem could prevent deployment of k8snetlook on the host (Eg: communication from the host to k8s api server is down).
 
-To clean existing binaries and supporting files, run:
-```
-make clean
-```
+The [examples folder](https://github.com/sarun87/k8snetlook/tree/master/examples) contains a yaml manifest that creates a K8s `Job` and runs to completion. All of the required RBAC objets and the Job itself is deployed in the `k8snetlook` namespace. Steps to run k8snetlook in k8s:
 
-To speed up development, there is a darwin target defined as well. To build a darwin compatible binary, run:
+* Change the value of key `command` under `containers` section with the required arguments to k8snetlook
+* Change the value of key `kubernetes.io/hostname` under `nodeSelector` section in the yaml spec to the host on which the problem pod is running. Then run the following commands:
+* Apply to cluster using:
 ```
-make k8snetlook-osx
+kubectl apply -f examples/run-k8s.yaml
 ```
+* Check results by pulling logs of the completed job
+```
+kubectl -n k8snetlook get pods
+```
+```
+kubectl -n k8snetlook logs <pod-name>
+```
+* Delete k8snetlook after the run
+```
+kubectl delete -f examples/run-k8s.yaml
+```
+* To rerun the test, delete k8snetlook and re-apply.
 
 ## Checks currently supported by the tool
 
@@ -105,6 +112,32 @@ By having to initialize kubernetes client-set, the tool intrinsically performs A
 |                                                  | Path MTU discovery between Src & Dst Pod (icmp)         |
 |                                                  | Path MTU discovery between Src Pod & External IP (icmp) |
 
+## How to build from source
+To build tool from source, run `make` as follows:
+```
+make all
+```
+The binary named `k8snetlook` will be built under `root-dir/bin/`
+
+To clean existing binaries and supporting files, run:
+```
+make clean
+```
+
+To speed up development, there is a darwin target defined as well. To build a darwin compatible binary, run:
+```
+make k8snetlook-osx
+```
+
+To create a zipped release binary, run:
+```
+make release
+```
+
+To create a docker image, run:
+```
+make docker-image
+```
 
 ## Contribute
 PRs welcome :)
