@@ -54,7 +54,7 @@ Notes:
 
 * download binary to a host
 ```
-wget https://github.com/sarun87/k8snetlook/releases/download/v0.1/k8snetlook
+wget https://github.com/sarun87/k8snetlook/releases/download/v0.2/k8snetlook
 ```
 * Make the downloaded file executable
 ```
