@@ -162,3 +162,31 @@ func RunMTUProbeToDstIPCheck(dstIP string) (bool, error) {
 	log.Info("   (Passed) Retured MTU for destination IP: %s = %d\n", dstIP, supportedMTU)
 	return true, nil
 }
+
+// RunDstSvcEndpointsConnectivityCheck checks connectivity from SrcPod to all IPs provided to this checker
+func RunDstSvcEndpointsConnectivityCheck(endpoints []Endpoint) (bool, error) {
+	totalCount := len(endpoints)
+	if totalCount == 0 {
+		return false, fmt.Errorf("could not fetch endpoints for k8s api server")
+	}
+	passedCount := 0
+	for _, ep := range endpoints {
+		log.Debug("  checking endpoint: %s ........", ep.IP)
+		pass, err := netutils.SendRecvICMPMessage(ep.IP, 64, true)
+		if err != nil {
+			log.Debug("  (Failed) Error running connectivity check to %s. Error: %v\n", ep.IP, err)
+		}
+		if pass == 0 {
+			log.Debug("  (Passed) Connectivity check to destination %s completed successfully\n", ep.IP)
+			passedCount++
+		} else {
+			log.Debug("  (Failed) Connectivity check to destination %s failed\n", ep.IP)
+		}
+	}
+	if passedCount == totalCount {
+		log.Debug("  (Passed) DstSvc Endpoints IP connectivity check")
+		return true, nil
+	}
+	log.Debug("  (Failed) DstSvc Endoints IP connectivity check for one or more endpoints")
+	return false, nil
+}

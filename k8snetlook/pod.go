@@ -80,12 +80,17 @@ func RunPodChecks() {
 			Name: "pMTU check for ExternalIP", Success: pass, ErrorMsg: err})
 	}
 
-	if Cfg.DstSvc.SvcEndpoint.IP != "" {
+	if Cfg.DstSvc.ClusterIP.IP != "" {
 		log.Debug("----> [From SrcPod] Running DstSvc DNS lookup check..")
 		pass, err = RunK8sDNSLookupCheck(Cfg.KubeDNSService.IP, Cfg.DstSvc.Name, Cfg.DstSvc.Namespace,
-			Cfg.DstSvc.SvcEndpoint.IP)
+			Cfg.DstSvc.ClusterIP.IP)
 		allChecks.PodChecks = append(allChecks.PodChecks, Check{
 			Name: "DNS lookup for DstSvc", Success: pass, ErrorMsg: err})
+
+		log.Debug("----> [From SrcPod] Running DstSvc Endpoints connectivity check..")
+		pass, err = RunDstSvcEndpointsConnectivityCheck(Cfg.DstSvc.SvcEndpoints)
+		allChecks.PodChecks = append(allChecks.PodChecks, Check{
+			Name: "DstSvc Endpoints connectivity check", Success: pass, ErrorMsg: err})
 	}
 
 	// Change network ns back to host

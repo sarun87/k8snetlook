@@ -25,9 +25,10 @@ type Pod struct {
 
 // Service struct specifies properties required for decribing a K8s service
 type Service struct {
-	Name        string
-	Namespace   string
-	SvcEndpoint Endpoint
+	Name         string
+	Namespace    string
+	ClusterIP    Endpoint
+	SvcEndpoints []Endpoint
 }
 
 // Endpoint struct specifies properties that an Endpoint represents
@@ -97,7 +98,7 @@ func initK8sInfo() error {
 		Cfg.DstPod.IP = getPodIPFromName(Cfg.DstPod.Namespace, Cfg.DstPod.Name)
 	}
 	if Cfg.DstSvc.Name != "" && Cfg.DstSvc.Namespace != "" {
-		Cfg.DstSvc.SvcEndpoint, _ = getServiceClusterIP(Cfg.DstSvc.Namespace, Cfg.DstSvc.Name)
+		Cfg.DstSvc.ClusterIP, _ = getServiceClusterIP(Cfg.DstSvc.Namespace, Cfg.DstSvc.Name)
 	}
 	return nil
 }

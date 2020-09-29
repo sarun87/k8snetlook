@@ -111,6 +111,7 @@ By having to initialize kubernetes client-set, the tool intrinsically performs A
 |                                                  | K8s DNS name lookup for specific service check          |
 |                                                  | Path MTU discovery between Src & Dst Pod (icmp)         |
 |                                                  | Path MTU discovery between Src Pod & External IP (icmp) |
+|                                                  | All K8s service endpoints IP connectivity check (icmp)  |
 
 ## How to build from source
 To build tool from source, run `make` as follows:
