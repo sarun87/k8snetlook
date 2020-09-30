@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 
 	log "github.com/sarun87/k8snetlook/logutil"
 	"github.com/sarun87/k8snetlook/netutils"
@@ -11,6 +12,7 @@ import (
 
 // RunGatewayConnectivityCheck checks connectivity to default gw
 func RunGatewayConnectivityCheck() (bool, error) {
+	log.Debug("Sending ICMP message to gw IP:%s", Cfg.HostGatewayIP)
 	pass, err := netutils.SendRecvICMPMessage(Cfg.HostGatewayIP, 64, true)
 	if err != nil {
 		log.Debug("  (Failed) Error running RunGatewayConnectivityCheck. Error: %v\n", err)
@@ -43,7 +45,7 @@ func RunDstConnectivityCheck(dstIP string) (bool, error) {
 func RunKubeAPIServiceIPConnectivityCheck() (bool, error) {
 	// TODO: Handle secure/non-secure api-servers
 	// HTTP 401 return code is a successful check
-	url := fmt.Sprintf("https://%s", net.JoinHostPort(Cfg.KubeAPIService.IP, string(Cfg.KubeAPIService.Port)))
+	url := fmt.Sprintf("https://%s", net.JoinHostPort(Cfg.KubeAPIService.IP, strconv.Itoa(int(Cfg.KubeAPIService.Port))))
 	var body []byte
 	responseCode, err := netutils.SendRecvHTTPMessage(url, "", &body)
 	if err != nil {
@@ -69,7 +71,7 @@ func RunKubeAPIEndpointIPConnectivityCheck() (bool, error) {
 	}
 	passedCount := 0
 	for _, ep := range endpoints {
-		url := fmt.Sprintf("https://%s", net.JoinHostPort(ep.IP, string(ep.Port)))
+		url := fmt.Sprintf("https://%s", net.JoinHostPort(ep.IP, strconv.Itoa(int(ep.Port))))
 		log.Debug("  checking endpoint: %s ........", url)
 		var body []byte
 		responseCode, err := netutils.SendRecvHTTPMessage(url, "", &body)
@@ -94,7 +96,7 @@ func RunKubeAPIEndpointIPConnectivityCheck() (bool, error) {
 
 // RunAPIServerHealthCheck checks api server health using livez endpoint
 func RunAPIServerHealthCheck() (bool, error) {
-	url := fmt.Sprintf("https://%s/livez?verbose", net.JoinHostPort(Cfg.KubeAPIService.IP, string(Cfg.KubeAPIService.Port)))
+	url := fmt.Sprintf("https://%s/livez?verbose", net.JoinHostPort(Cfg.KubeAPIService.IP, strconv.Itoa(int(Cfg.KubeAPIService.Port))))
 	svcAccountToken, err := getSvcAccountToken()
 	if err != nil {
 		log.Debug("  (Failed) ", err)
@@ -128,7 +130,7 @@ func RunK8sDNSLookupCheck(dnsServerIP, dstSvcName, dstSvcNamespace, dstSvcExpect
 	// Check if the resolved IP matches with the IP reported by K8s
 	for _, ip := range ips {
 		if ip == dstSvcExpectedIP {
-			log.Debug("  (Passed) dns lookup to %s returned: %v. Expected: %s\n", svcfqdn, ips, ip)
+			log.Debug("  (Passed) dns lookup to %s returned: %s. Expected: %s\n", svcfqdn, ip, dstSvcExpectedIP)
 			return true, nil
 		}
 	}

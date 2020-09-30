@@ -99,6 +99,7 @@ func initK8sInfo() error {
 	}
 	if Cfg.DstSvc.Name != "" && Cfg.DstSvc.Namespace != "" {
 		Cfg.DstSvc.ClusterIP, _ = getServiceClusterIP(Cfg.DstSvc.Namespace, Cfg.DstSvc.Name)
+		Cfg.DstSvc.SvcEndpoints = getEndpointsFromService(Cfg.DstSvc.Namespace, Cfg.DstSvc.Name)
 	}
 	return nil
 }

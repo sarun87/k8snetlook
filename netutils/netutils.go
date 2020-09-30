@@ -31,7 +31,7 @@ func getHostGatewayIPUsingFamily(family int) (string, error) {
 	}
 	for _, r := range routes {
 		// Check if the route is marked as a gw route
-		if r.Gw != nil {
+		if r.Gw != nil && r.Dst == nil {
 			return r.Gw.String(), nil
 		}
 	}

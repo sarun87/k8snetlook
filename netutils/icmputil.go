@@ -2,14 +2,16 @@ package netutils
 
 import (
 	"fmt"
+	"math/rand"
 	"net"
-	"os"
+	"strings"
 	"time"
 
 	"golang.org/x/net/ipv6"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	log "github.com/sarun87/k8snetlook/logutil"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
 )
@@ -18,6 +20,9 @@ const (
 	icmpTimeout        = 4
 	icmpMessageBody    = "K8SNETLOOK-ICMP-TEST"
 	defaultPayloadSize = 64
+	icmpIDRandMin      = 5000
+	icmpIDRandMax      = 32000
+	maxCountICMPReply  = 10
 )
 
 // SendRecvICMPMessage checks if icmp ping is successful.
@@ -43,6 +48,10 @@ func SendRecvICMPMessage(dstIP string, payloadSize int, dontFragment bool) (int,
 //			   1 - Fragmentation required
 //             2 - got icmp but unknwon type
 func sendRecvICMPMessageV4(dstIP string, payloadSize int, dontFragment bool) (int, error) {
+	// If an additional payload size isn't specified, use default
+	if payloadSize < defaultPayloadSize {
+		payloadSize = defaultPayloadSize
+	}
 	// Listen for ICMP reply on all IPs
 	c, err := icmp.ListenPacket("ip4:icmp", "0.0.0.0")
 	if err != nil {
@@ -58,8 +67,8 @@ func sendRecvICMPMessageV4(dstIP string, payloadSize int, dontFragment bool) (in
 	rb := make([]byte, payloadSize)
 	c.SetReadDeadline(time.Now().Add(time.Second * icmpTimeout))
 
-	// Read reply. Try twice. Discard echo request if read back on 127.0.0.1 (Needed for unit tests)
-	for tries := 0; tries < 2; tries++ {
+	// Read maxCountICMPReply packets
+	for tries := 0; tries < maxCountICMPReply; tries++ {
 		n, _, err := c.ReadFrom(rb)
 		if err != nil {
 			if err.(net.Error).Timeout() {
@@ -78,17 +87,19 @@ func sendRecvICMPMessageV4(dstIP string, payloadSize int, dontFragment bool) (in
 			// Reflection received successfully. Return success
 			// log.Debug("    got reflection from %v with payload size:%d\n", peer, payloadSize)
 			// To check if echo reply is specific to this app, check message
-			// b, _ := rm.Body.Marshal(1)  // 1 : ICMPv4 type protocol number
-			// icmpMessage == string(b[2:2+len(icmpMessageBody)])  // First two bytes: length of body
-			return 0, nil
+			b, _ := rm.Body.Marshal(1) // 1 : ICMPv4 type protocol number
+			if strings.Contains(string(b), icmpMessageBody) {
+				// k8snetlook reply received
+				return 0, nil
+			}
+			log.Debug("    got echo reply but not for k8snellook packet. Continuing to read more icmp reply packets")
 		case ipv4.ICMPTypeDestinationUnreachable:
 			if rm.Code == layers.ICMPv4CodeFragmentationNeeded {
 				// log.Debug("   Fragmentation required, and DF flag set\n")
 				return 1, nil
 			}
 		default:
-			// log.Debug("    got %+v; want echo reply\n", rm)
-			// Try multiple messages
+			log.Debug("    got %+v; want echo reply\n", rm)
 		}
 	}
 	// Got ICMP type but not an echo reply
@@ -98,10 +109,6 @@ func sendRecvICMPMessageV4(dstIP string, payloadSize int, dontFragment bool) (in
 // sendICMPMessage sends a single ICMP packet over the wire
 // Picked from https://github.com/ipsecdiagtool/ipsecdiagtool project & modified as necessary
 func sendICMPMessageV4(dstIP string, payloadSize int, dontfragment bool) error {
-	// If an additional payload size isn't specified, use default
-	if payloadSize < defaultPayloadSize {
-		payloadSize = defaultPayloadSize
-	}
 	// IP Layer
 	ip := layers.IPv4{
 		SrcIP:    net.ParseIP("0.0.0.0"),
@@ -175,13 +182,17 @@ func sendRecvICMPMessageV6(dstIP string, payloadSize int) (int, error) {
 	}
 	payloadbytes := []byte(icmpMessageBody)
 	if payloadSize > len(icmpMessageBody) {
-		padding := make([]byte, payloadSize-len(icmpMessageBody))
+		// id: 4 bytes, seq: 4 bytes, totaling 8 bytes
+		padding := make([]byte, payloadSize-len(icmpMessageBody)-8)
 		payloadbytes = append(payloadbytes, padding...)
 	}
+	icmpID := (rand.Intn(icmpIDRandMax-icmpIDRandMin) + icmpIDRandMin) & 0xffff
+	icmpSeq := 1
 	wm := icmp.Message{
 		Type: ipv6.ICMPTypeEchoRequest, Code: 0,
 		Body: &icmp.Echo{
-			ID: os.Getpid() & 0xffff, Seq: 1,
+			ID:   icmpID,
+			Seq:  icmpSeq,
 			Data: payloadbytes,
 		},
 	}
@@ -196,8 +207,8 @@ func sendRecvICMPMessageV6(dstIP string, payloadSize int) (int, error) {
 	rb := make([]byte, payloadSize)
 	c.SetReadDeadline(time.Now().Add(time.Second * icmpTimeout))
 
-	// Read reply. Try twice. Discard echo request if read back on 127.0.0.1 (Needed for unit tests)
-	for tries := 0; tries < 2; tries++ {
+	// Read maxCountICMPReply packets
+	for tries := 0; tries < maxCountICMPReply; tries++ {
 		n, _, err := c.ReadFrom(rb)
 		if err != nil {
 			if err.(net.Error).Timeout() {
@@ -216,15 +227,17 @@ func sendRecvICMPMessageV6(dstIP string, payloadSize int) (int, error) {
 			// Reflection received successfully. Return success
 			// log.Debug("    got reflection from %v with payload size:%d\n", peer, payloadSize)
 			// To check if echo reply is specific to this app, check message
-			// b, _ := rm.Body.Marshal(1)  // 1 : ICMPv4 type protocol number
-			// icmpMessage == string(b[2:2+len(icmpMessageBody)])  // First two bytes: length of body
-			return 0, nil
+			b, _ := rm.Body.Marshal(58) // 58 : ICMPv6 type protocol number
+			if strings.Contains(string(b), icmpMessageBody) {
+				// k8snetlook reply received
+				return 0, nil
+			}
+			log.Debug("    got echo reply but not for k8snellook packet. Continuing to read more icmp reply packets")
 		case ipv6.ICMPTypePacketTooBig:
 			// log.Debug("   Fragmentation required, and DF flag set\n")
 			return 1, nil
 		default:
-			// log.Debug("    got %+v; want echo reply\n", rm)
-			// Try multiple messages
+			log.Debug("    got %+v; want echo reply\n", rm)
 		}
 	}
 	// Got ICMP type but not an echo reply
