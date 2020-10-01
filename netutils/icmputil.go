@@ -12,14 +12,15 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	log "github.com/sarun87/k8snetlook/logutil"
+	uuid "github.com/satori/go.uuid"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
 )
 
 const (
 	icmpTimeout        = 4
-	icmpMessageBody    = "K8SNETLOOK-ICMP-TEST"
-	defaultPayloadSize = 64
+	icmpMessagePrefix  = "K8SNETLOOK"
+	defaultPayloadSize = 84
 	icmpIDRandMin      = 5000
 	icmpIDRandMax      = 32000
 	maxCountICMPReply  = 10
@@ -59,8 +60,9 @@ func sendRecvICMPMessageV4(dstIP string, payloadSize int, dontFragment bool) (in
 	}
 	defer c.Close()
 
+	icmpMessageBody := fmt.Sprintf("%s-%s", icmpMessagePrefix, uuid.NewV4())
 	// Send ICMP message
-	if err := sendICMPMessageV4(dstIP, payloadSize, dontFragment); err != nil {
+	if err := sendICMPMessageV4(dstIP, payloadSize, dontFragment, icmpMessageBody); err != nil {
 		return -1, err
 	}
 
@@ -108,7 +110,7 @@ func sendRecvICMPMessageV4(dstIP string, payloadSize int, dontFragment bool) (in
 
 // sendICMPMessage sends a single ICMP packet over the wire
 // Picked from https://github.com/ipsecdiagtool/ipsecdiagtool project & modified as necessary
-func sendICMPMessageV4(dstIP string, payloadSize int, dontfragment bool) error {
+func sendICMPMessageV4(dstIP string, payloadSize int, dontfragment bool, icmpMessageBody string) error {
 	// IP Layer
 	ip := layers.IPv4{
 		SrcIP:    net.ParseIP("0.0.0.0"),
@@ -180,6 +182,7 @@ func sendRecvICMPMessageV6(dstIP string, payloadSize int) (int, error) {
 	if payloadSize < defaultPayloadSize {
 		payloadSize = defaultPayloadSize
 	}
+	icmpMessageBody := fmt.Sprintf("%s-%s", icmpMessagePrefix, uuid.NewV4())
 	payloadbytes := []byte(icmpMessageBody)
 	if payloadSize > len(icmpMessageBody) {
 		// id: 4 bytes, seq: 4 bytes, totaling 8 bytes
