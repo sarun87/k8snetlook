@@ -99,7 +99,7 @@ func sendRecvICMPMessageV4(dstIP string, payloadSize int, dontFragment bool) (in
 				return 1, nil
 			}
 		default:
-			log.Debug("    got %+v; want echo reply\n", rm)
+			//log.Debug("    got %+v; want echo reply\n", rm)
 		}
 	}
 	// Got ICMP type but not an echo reply

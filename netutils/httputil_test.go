@@ -4,8 +4,15 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"testing"
 )
+
+func skipTest(t *testing.T) {
+	if os.Getenv("TESTIPV6") == "" {
+		t.Skip("Skipping testing in CI environment")
+	}
+}
 
 func TestSendRecvHTTPMessageV4(t *testing.T) {
 	var body []byte
@@ -22,6 +29,8 @@ func TestSendRecvHTTPMessageV4(t *testing.T) {
 }
 
 func TestSendRecvHTTPMessageV6(t *testing.T) {
+	// Skip when run through make test
+	skipTest(t)
 	var body []byte
 	// TODO: Use localtest server for unit testing
 	// Use www.google.com IPV6 address
