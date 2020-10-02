@@ -41,7 +41,9 @@ import (
 func RunDNSLookupUsingCustomResolver(nameserver, hostFQDN string) ([]string, error) {
 	// TODO: Add retries
 
-	// Create DNS Message with single question
+	result := []string{}
+
+	// Create DNS32 Message with single question
 	msg := &dns.Msg{
 		MsgHdr: dns.MsgHdr{
 			Id:               dns.Id(),
@@ -50,13 +52,39 @@ func RunDNSLookupUsingCustomResolver(nameserver, hostFQDN string) ([]string, err
 		Question: []dns.Question{{Name: dns.Fqdn(hostFQDN), Qtype: dns.TypeA, Qclass: dns.ClassINET}},
 	}
 
+	// Send question and add resolved ips to result
+	res, err := getIPFromDNSQuery(msg, nameserver)
+	if err != nil {
+		return nil, err
+	}
+	result = append(result, res...)
+
+	// Create DNS64 Message with single question
+	msg = &dns.Msg{
+		MsgHdr: dns.MsgHdr{
+			Id:               dns.Id(),
+			RecursionDesired: true,
+		},
+		Question: []dns.Question{{Name: dns.Fqdn(hostFQDN), Qtype: dns.TypeAAAA, Qclass: dns.ClassINET}},
+	}
+
+	// Send question and add resolved ips to result
+	res, err = getIPFromDNSQuery(msg, nameserver)
+	if err != nil {
+		return nil, err
+	}
+	result = append(result, res...)
+
+	return result, err
+}
+
+func getIPFromDNSQuery(msg *dns.Msg, nameserver string) ([]string, error) {
+	result := []string{}
 	// Send question to nameserver and wait for answer
 	in, err := dns.Exchange(msg, nameserver)
 	if err != nil {
 		return nil, err
 	}
-
-	result := []string{}
 
 	if in != nil && in.Rcode != dns.RcodeSuccess {
 		// Return error code
@@ -67,6 +95,9 @@ func RunDNSLookupUsingCustomResolver(nameserver, hostFQDN string) ([]string, err
 	for _, record := range in.Answer {
 		if t, ok := record.(*dns.A); ok {
 			result = append(result, t.A.String())
+		}
+		if t, ok := record.(*dns.AAAA); ok {
+			result = append(result, t.AAAA.String())
 		}
 	}
 	return result, err

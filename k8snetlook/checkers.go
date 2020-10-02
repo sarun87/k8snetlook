@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 
 	log "github.com/sarun87/k8snetlook/logutil"
 	"github.com/sarun87/k8snetlook/netutils"
@@ -11,6 +12,7 @@ import (
 
 // RunGatewayConnectivityCheck checks connectivity to default gw
 func RunGatewayConnectivityCheck() (bool, error) {
+	log.Debug("Sending ICMP message to gw IP:%s", Cfg.HostGatewayIP)
 	pass, err := netutils.SendRecvICMPMessage(Cfg.HostGatewayIP, 64, true)
 	if err != nil {
 		log.Debug("  (Failed) Error running RunGatewayConnectivityCheck. Error: %v\n", err)
@@ -43,7 +45,7 @@ func RunDstConnectivityCheck(dstIP string) (bool, error) {
 func RunKubeAPIServiceIPConnectivityCheck() (bool, error) {
 	// TODO: Handle secure/non-secure api-servers
 	// HTTP 401 return code is a successful check
-	url := fmt.Sprintf("https://%s:%d", Cfg.KubeAPIService.IP, Cfg.KubeAPIService.Port)
+	url := fmt.Sprintf("https://%s", net.JoinHostPort(Cfg.KubeAPIService.IP, strconv.Itoa(int(Cfg.KubeAPIService.Port))))
 	var body []byte
 	responseCode, err := netutils.SendRecvHTTPMessage(url, "", &body)
 	if err != nil {
@@ -69,7 +71,7 @@ func RunKubeAPIEndpointIPConnectivityCheck() (bool, error) {
 	}
 	passedCount := 0
 	for _, ep := range endpoints {
-		url := fmt.Sprintf("https://%s:%d", ep.IP, ep.Port)
+		url := fmt.Sprintf("https://%s", net.JoinHostPort(ep.IP, strconv.Itoa(int(ep.Port))))
 		log.Debug("  checking endpoint: %s ........", url)
 		var body []byte
 		responseCode, err := netutils.SendRecvHTTPMessage(url, "", &body)
@@ -94,7 +96,7 @@ func RunKubeAPIEndpointIPConnectivityCheck() (bool, error) {
 
 // RunAPIServerHealthCheck checks api server health using livez endpoint
 func RunAPIServerHealthCheck() (bool, error) {
-	url := fmt.Sprintf("https://%s:%d/livez?verbose", Cfg.KubeAPIService.IP, Cfg.KubeAPIService.Port)
+	url := fmt.Sprintf("https://%s/livez?verbose", net.JoinHostPort(Cfg.KubeAPIService.IP, strconv.Itoa(int(Cfg.KubeAPIService.Port))))
 	svcAccountToken, err := getSvcAccountToken()
 	if err != nil {
 		log.Debug("  (Failed) ", err)
@@ -117,7 +119,7 @@ func RunAPIServerHealthCheck() (bool, error) {
 
 // RunK8sDNSLookupCheck checks DNS lookup functionality for a given K8s service
 func RunK8sDNSLookupCheck(dnsServerIP, dstSvcName, dstSvcNamespace, dstSvcExpectedIP string) (bool, error) {
-	dnsServerURL := fmt.Sprintf("%s:53", dnsServerIP)
+	dnsServerURL := net.JoinHostPort(dnsServerIP, "53")
 	// TODO: Fetch domain information from cluster
 	svcfqdn := fmt.Sprintf("%s.%s.svc.cluster.local.", dstSvcName, dstSvcNamespace)
 	ips, err := netutils.RunDNSLookupUsingCustomResolver(dnsServerURL, svcfqdn)
@@ -128,7 +130,7 @@ func RunK8sDNSLookupCheck(dnsServerIP, dstSvcName, dstSvcNamespace, dstSvcExpect
 	// Check if the resolved IP matches with the IP reported by K8s
 	for _, ip := range ips {
 		if ip == dstSvcExpectedIP {
-			log.Debug("  (Passed) dns lookup to %s returned: %v. Expected: %s\n", svcfqdn, ips, ip)
+			log.Debug("  (Passed) dns lookup to %s returned: %s. Expected: %s\n", svcfqdn, ip, dstSvcExpectedIP)
 			return true, nil
 		}
 	}
@@ -161,4 +163,32 @@ func RunMTUProbeToDstIPCheck(dstIP string) (bool, error) {
 	// TODO: Check for the outgoing interface mtu and compare
 	log.Info("   (Passed) Retured MTU for destination IP: %s = %d\n", dstIP, supportedMTU)
 	return true, nil
+}
+
+// RunDstSvcEndpointsConnectivityCheck checks connectivity from SrcPod to all IPs provided to this checker
+func RunDstSvcEndpointsConnectivityCheck(endpoints []Endpoint) (bool, error) {
+	totalCount := len(endpoints)
+	if totalCount == 0 {
+		return false, fmt.Errorf("could not fetch endpoints for k8s api server")
+	}
+	passedCount := 0
+	for _, ep := range endpoints {
+		log.Debug("  checking endpoint: %s ........", ep.IP)
+		pass, err := netutils.SendRecvICMPMessage(ep.IP, 64, true)
+		if err != nil {
+			log.Debug("  (Failed) Error running connectivity check to %s. Error: %v\n", ep.IP, err)
+		}
+		if pass == 0 {
+			log.Debug("  (Passed) Connectivity check to destination %s completed successfully\n", ep.IP)
+			passedCount++
+		} else {
+			log.Debug("  (Failed) Connectivity check to destination %s failed\n", ep.IP)
+		}
+	}
+	if passedCount == totalCount {
+		log.Debug("  (Passed) DstSvc Endpoints IP connectivity check")
+		return true, nil
+	}
+	log.Debug("  (Failed) DstSvc Endoints IP connectivity check for one or more endpoints")
+	return false, nil
 }
