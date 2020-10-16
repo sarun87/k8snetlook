@@ -1,7 +1,7 @@
 CGO_ENABLED=0
 GOARCH=amd64
 BINARY=k8snetlook
-TAG=v0.2
+TAG=v0.3
 
 UNAME_S := $(shell uname -s)
 ifeq (${UNAME_S},Linux)

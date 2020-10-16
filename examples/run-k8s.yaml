@@ -55,7 +55,7 @@ spec:
         kubernetes.io/hostname: ip-10-0-1-253.us-west-2.compute.internal
       containers:
       - name: k8snetlook
-        image: sarun87/k8snetlook:v0.2
+        image: sarun87/k8snetlook:v0.3
         ## Edit command suite your debugging needs
         command: ["/k8snetlook", "host"]
         ## Pod debugging example

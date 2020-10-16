@@ -40,7 +40,7 @@ Docker image is hosted at sarun87/k8snetlook:<release_tag>. Or build your own do
 
 * Command to run the tool as a docker container
 ```
-docker run --privileged --pid=host --net=host -v /var/run/docker.sock:/var/run/docker.sock -v $KUBECONFIG:/kubeconfig.yaml sarun87/k8snetlook:v0.2 /k8snetlook host -config /kubeconfig.yaml
+docker run --privileged --pid=host --net=host -v /var/run/docker.sock:/var/run/docker.sock -v $KUBECONFIG:/kubeconfig.yaml sarun87/k8snetlook:v0.3 /k8snetlook host -config /kubeconfig.yaml
 ```
 Notes:
 * The above command assumes that the $KUBECONFIG environment variable is pointing to a valid kubeconfig & mounts it within the container
@@ -53,7 +53,7 @@ Notes:
 
 * download binary to a host
 ```
-wget https://github.com/sarun87/k8snetlook/releases/download/v0.2/k8snetlook
+wget https://github.com/sarun87/k8snetlook/releases/download/v0.3/k8snetlook
 ```
 * Make the downloaded file executable
 ```
