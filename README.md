@@ -4,7 +4,7 @@
 Kubernetes Network Problem Detector
 
 ## Introduction
-A simple tool to help debug connetivity issues within a Pod or from a specific host in a live kubernetes cluster easily with a single command. Works with both IPv4 as well as IPv6 K8s stacks.
+A simple tool to help debug connectivity issues within a Pod or from a specific host in a live Kubernetes cluster easily with a single command. Works with both IPv4 as well as IPv6 K8s stacks.
 
 ## Background
 When connectivity between two applications within a Kubernetes cluster does not work as expected, it requires specific troubleshooting steps in real time to find the issue. Often times, this involves using network tools such as `ping`, `tcpdump`, `traceroute`, `nslookup` and others to vaildate the plumbing; both within the source Pod as well as on the host that the pod is running.
@@ -96,7 +96,7 @@ kubectl delete -f examples/run-k8s.yaml
 * To rerun the test, delete k8snetlook and re-apply.
 
 ## Checks currently supported by the tool
-By having to initialize kubernetes client-set, the tool intrinsically performs API connectivity check via K8s-apiserver's VIP/External Loadbalancer in case of highly available k8s-apiserver clusters. The tool supports pure IPv6 K8s stack as well as IPv4.
+By having to initialize a Kubernetes client-set, the tool intrinsically performs API connectivity check via K8s-apiserver's VIP/External Loadbalancer in case of highly available k8s-apiserver clusters. The tool supports pure IPv6 K8s stack as well as IPv4.
 
 | Host Checks                                      | Pod Checks                                              |
 | ------------------------------------------------ | ------------------------------------------------------- |
