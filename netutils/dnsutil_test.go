@@ -11,7 +11,7 @@ func TestDNSLookupGoogle(t *testing.T) {
 	}
 	t.Logf("Resolved IPs:%v\n", res)
 	// Should have an IPv4 and an IPv6 address for Google
-	if len(res) != 2 {
+	if len(res) < 2 {
 		t.Errorf("DNS resolution for www.google.com into ipv4 and ipv6 addresses failed with Google DNS")
 	}
 }
