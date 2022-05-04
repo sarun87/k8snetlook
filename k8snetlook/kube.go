@@ -6,6 +6,7 @@ import (
 
 	log "github.com/sarun87/k8snetlook/logutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"golang.org/x/net/context"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -38,7 +39,7 @@ func initKubernetesClient(kubeconfigPath string) error {
 }
 
 func getServiceClusterIP(namespace string, serviceName string) (Endpoint, error) {
-	service, err := clientset.CoreV1().Services(namespace).Get(serviceName, metav1.GetOptions{})
+	service, err := clientset.CoreV1().Services(namespace).Get(context.TODO(), serviceName, metav1.GetOptions{})
 	if err != nil {
 		log.Error("Error fetching %s service in %s ns. Error: %v", serviceName, namespace, err)
 		return Endpoint{}, err
@@ -49,7 +50,7 @@ func getServiceClusterIP(namespace string, serviceName string) (Endpoint, error)
 
 func getPodIPFromName(namespace string, podName string) string {
 	// if namespace == "" i.e metav1.NamespaceAll, then all pods are listed
-	pod, err := clientset.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
+	pod, err := clientset.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
 		log.Error("Error fetching %s pod in %s ns. Error: %v", podName, namespace, err)
 		return ""
@@ -59,7 +60,7 @@ func getPodIPFromName(namespace string, podName string) string {
 
 func getContainerIDFromPod(namespace string, podName string) string {
 	// if namespace == "" i.e metav1.NamespaceAll, then all pods are listed
-	pod, err := clientset.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
+	pod, err := clientset.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
 		log.Error("Error fetching %s pod in %s ns. Error: %v", podName, namespace, err)
 		return ""
@@ -70,7 +71,7 @@ func getContainerIDFromPod(namespace string, podName string) string {
 
 func getEndpointsFromService(namespace string, serviceName string) []Endpoint {
 	var ret []Endpoint
-	endpoints, err := clientset.CoreV1().Endpoints(namespace).Get(serviceName, metav1.GetOptions{})
+	endpoints, err := clientset.CoreV1().Endpoints(namespace).Get(context.TODO(), serviceName, metav1.GetOptions{})
 	if err != nil {
 		log.Error("Error fetching %s service endpoints in %s ns. Error: %v", serviceName, namespace, err)
 		return ret
@@ -86,11 +87,11 @@ func getEndpointsFromService(namespace string, serviceName string) []Endpoint {
 }
 
 func getSvcAccountToken() (string, error) {
-	svcAccount, err := clientset.CoreV1().ServiceAccounts("default").Get("default", metav1.GetOptions{})
+	svcAccount, err := clientset.CoreV1().ServiceAccounts("default").Get(context.TODO(), "default", metav1.GetOptions{})
 	if err != nil {
 		return "", fmt.Errorf("Error fetching default service acccount. Error: %s", err)
 	}
-	secret, err := clientset.CoreV1().Secrets("default").Get(svcAccount.Secrets[0].Name, metav1.GetOptions{})
+	secret, err := clientset.CoreV1().Secrets("default").Get(context.TODO(), svcAccount.Secrets[0].Name, metav1.GetOptions{})
 	if err != nil {
 		return "", fmt.Errorf("Error fetching secret for service account. Error: %s", err)
 	}

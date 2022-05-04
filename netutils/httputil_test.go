@@ -17,7 +17,7 @@ func skipTest(t *testing.T) {
 func TestSendRecvHTTPMessageV4(t *testing.T) {
 	var body []byte
 	// Use Google IPv4 Address
-	url := "http://172.217.9.4:80"
+	url := "http://172.217.164.100:80"
 	responseCode, err := SendRecvHTTPMessage(url, "", &body)
 	if err != nil {
 		t.Errorf("Unable to fetch response Error: %v", err)

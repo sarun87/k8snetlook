@@ -113,7 +113,7 @@ func getPodNetnsHandle(namespace string, podName string) netns.NsHandle {
 	}
 	containerID = strings.TrimPrefix(containerID, "docker://")
 	log.Debug("ContainerID:%s\n", containerID)
-	cli, err := client.NewClient(client.DefaultDockerHost, client.DefaultVersion, nil, nil)
+	cli, err := client.NewClientWithOpts(client.FromEnv,client.WithAPIVersionNegotiation())
 	if err != nil {
 		log.Error("Unable to create docker client: %v", err)
 		os.Exit(1)
