@@ -3,6 +3,8 @@
 # k8snetlook
 Kubernetes Network Problem Detector
 
+![plot](./k8snetlook-logo.png)
+
 ## Introduction
 A simple tool to help debug connectivity issues within a Pod or from a specific host in a live Kubernetes cluster easily with a single command. Works with both IPv4 as well as IPv6 K8s stacks.
 
