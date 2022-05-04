@@ -141,4 +141,7 @@ make docker-image
 ## Contribute
 PRs welcome :)
 
+## Demos !
 
+- At Kubecon 2021 Arun presented k8snetlook on a 3 node cluster (Vagrant VMs): https://www.youtube.com/watch?v=_BDoxy9h95U.
+- We went over k8snetlook recently in an Antrea-LIVE episode https://www.youtube.com/watch?v=aWUwxQ58bEQ on a VMWare Tanzu cluster (Vsphere).
