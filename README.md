@@ -1,4 +1,4 @@
-![master](https://github.com/sarun87/k8snetlook/workflows/Build%20&%20Test/badge.svg?branch=master)
+[![Build & Test](https://github.com/sarun87/k8snetlook/actions/workflows/go.yml/badge.svg?branch=master)](https://github.com/sarun87/k8snetlook/actions/workflows/go.yml)
 
 # k8snetlook
 Kubernetes Network Problem Detector
