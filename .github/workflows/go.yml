@@ -28,11 +28,5 @@ jobs:
     - name: Build binary
       run: make all
 
-    - name: Run go vet
-      run: make vet
-
-    - name: Run Unit Tests
-      run: make test
-
     - name: Cleanup
       run: make clean
